@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG-House Corp. — Supply Chain Management Hub.</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <style>
+        :root{--bg-dark:#070a12;--sidebar-bg:#0f1420;--card-bg:rgba(255,255,255,.03);--card-border:rgba(255,255,255,.07);--text-main:#f8fafc;--text-muted:#94a3b8;--gradient-primary:linear-gradient(135deg,#22d3ee 0%,#0ea5e9 50%,#4338ca 100%);--gradient-success:linear-gradient(135deg,#34d399 0%,#059669 100%);--gradient-warning:linear-gradient(135deg,#fbbf24 0%,#d97706 100%);--gradient-danger:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%);--accent-glow:rgba(34,211,238,.15)}
+        *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+        h1,h2,h3,.brand-text{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
+        body{background-color:var(--bg-dark);color:var(--text-main);display:flex;min-height:100vh;overflow-x:hidden}
+        #login-screen{position:fixed;top:0;left:0;width:100vw;height:100vh;background:radial-gradient(circle at 80% 20%,#1e1b4b 0%,#070a12 100%);display:flex;justify-content:center;align-items:center;z-index:9999;transition:opacity .5s}
+        .login-box{background:rgba(15,20,32,.75);backdrop-filter:blur(25px);border:1px solid var(--card-border);padding:45px 40px;border-radius:28px;width:100%;max-width:435px;box-shadow:0 25px 60px rgba(0,0,0,.6),0 0 50px rgba(34,211,238,.08);text-align:center}
+        .login-box h2{font-size:1.85rem;margin-bottom:6px;letter-spacing:-.5px;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        nav{width:280px;background-color:var(--sidebar-bg);padding:30px 20px;display:flex;flex-direction:column;position:fixed;height:100vh;border-right:1px solid var(--card-border);z-index:100;overflow-y:auto}
+        .brand{display:flex;align-items:center;gap:12px;margin-bottom:30px;padding-left:10px}
+        .brand i{font-size:1.4rem;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .brand-text{font-size:1.25rem;letter-spacing:-.5px;font-weight:800}
+        .nav-item{padding:12px 16px;margin-bottom:6px;border-radius:12px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:12px;color:var(--text-muted);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+        .nav-item i{font-size:14px}.nav-item:hover{color:var(--text-main);background:rgba(255,255,255,.03)}
+        .nav-item.active{background:var(--gradient-primary);color:#fff;box-shadow:0 8px 20px rgba(14,165,233,.25)}
+        .spv-only{border-left:3px solid #fbbf24}
+        main{flex-grow:1;margin-left:280px;padding:35px;display:none}
+        .view{display:none;animation:slideUp .5s ease}.view.active{display:block}
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:35px;flex-wrap:wrap;gap:10px}
+        .top-bar h2{font-size:1.8rem;letter-spacing:-.5px}
+        .sync-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+        .sync-badge.offline{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.2)}
+        .sync-badge.online{background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.2)}
+        .sync-badge.syncing{background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+        .sync-badge.error{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+        .sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+        .sync-dot.offline{background:#fbbf24}.sync-dot.online{background:#34d399;animation:pulse 2s infinite}
+        .sync-dot.syncing{background:#60a5fa;animation:pulse .8s infinite}.sync-dot.error{background:#f87171}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+        .card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:24px;padding:30px;margin-bottom:25px;backdrop-filter:blur(10px)}
+        .card h2{font-size:1.3rem;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+        .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+        .form-group{margin-bottom:20px}
+        label{display:block;margin-bottom:8px;color:var(--text-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+        input,select,textarea{width:100%;padding:16px 14px;background:rgba(0,0,0,.25);border:1px solid var(--card-border);border-radius:12px;color:var(--text-main);font-size:12px;transition:all .3s}
+        input:focus,select:focus,textarea:focus{outline:none;border-color:#22d3ee;box-shadow:0 0 15px var(--accent-glow)}
+        select option{background:var(--sidebar-bg);color:var(--text-main)}
+        .radio-group{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:10px}
+        .radio-box{border:1px solid var(--card-border);padding:18px 16px;border-radius:16px;cursor:pointer;background:rgba(255,255,255,.01);transition:all .2s;text-align:left}
+        .radio-box input{display:none}.radio-box strong{display:block;font-size:13px;margin-bottom:4px}.radio-box small{font-size:10.5px}
+        .radio-box.selected{border-color:#22d3ee;background:rgba(34,211,238,.08)}
+        .btn{padding:13px 20px;border:none;border-radius:12px;cursor:pointer;font-size:11px;font-weight:700;transition:all .3s;display:inline-flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.5px}
+        .btn-primary{background:var(--gradient-primary);color:#fff}.btn-success{background:var(--gradient-success);color:#fff}
+        .btn-warning{background:var(--gradient-warning);color:#070a12}.btn-danger{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+        .btn-danger:hover{background:#ef4444;color:#fff}.btn-sm{padding:6px 12px;font-size:10px;border-radius:8px}.btn-xs{padding:4px 10px;font-size:9px;border-radius:6px}
+        .table-container{overflow-x:auto;margin-top:15px;border-radius:16px;border:1px solid var(--card-border)}
+        table{width:100%;border-collapse:collapse;font-size:11px;background:rgba(0,0,0,.1)}
+        th{background:rgba(255,255,255,.02);text-align:left;padding:14px 8px;border-bottom:1px solid var(--card-border);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9.5px;white-space:nowrap}
+        td{padding:12px 8px;border-bottom:1px solid rgba(255,255,255,.02);vertical-align:middle;color:#e2e8f0;line-height:1.5;font-size:11px}
+        tr:hover td{background:rgba(255,255,255,.01)}
+        .badge{padding:4px 10px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;display:inline-block;white-space:nowrap}
+        .badge-done{background:rgba(52,211,153,.1);color:#34d399}.badge-pending{background:rgba(251,191,36,.1);color:#fbbf24}.badge-danger{background:rgba(239,68,68,.12);color:#f87171}
+        .badge-info{background:rgba(59,130,246,.12);color:#60a5fa}
+        .fleet-input-set{border:1px solid var(--card-border);padding:20px;border-radius:16px;margin-bottom:18px;background:rgba(255,255,255,.01)}
+        .fleet-title{font-weight:700;color:#22d3ee;margin-bottom:12px;display:block;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+        hr{border:0;height:1px;background:var(--card-border);margin:25px 0}
+        .filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:rgba(255,255,255,.02);border:1px solid var(--card-border);padding:16px 20px;border-radius:18px;margin-bottom:20px}
+        .filter-bar input[type="date"],.filter-bar select,.filter-bar input[type="text"]{padding:10px 12px;border-radius:10px;font-size:11px;width:auto;min-width:110px}
+        .filter-bar .separator{color:var(--text-muted);font-size:11px}.filter-bar .spacer{flex-grow:1}
+        .search-bar-form{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px;padding:14px 18px;background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:14px}
+        .search-bar-form input,.search-bar-form select{padding:10px 12px;border-radius:10px;font-size:11px;width:auto;min-width:150px;max-width:230px}
+        .search-bar-form label{margin:0;font-size:10px;white-space:nowrap;display:flex;align-items:center;gap:6px;color:#60a5fa;font-weight:700}
+        .modal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(7,10,18,.85);backdrop-filter:blur(8px);display:none;justify-content:center;align-items:flex-start;z-index:10000;overflow-y:auto;padding:30px}
+        .modal-content{background:#0f1420;border:1px solid var(--card-border);border-radius:24px;padding:35px;width:100%;max-width:600px;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:zoomIn .3s ease;margin-top:20px}
+        @keyframes zoomIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+        .modal-header h3{font-size:1.3rem;color:#22d3ee}.modal-close{cursor:pointer;color:var(--text-muted);font-size:1.5rem;transition:.2s}.modal-close:hover{color:#f87171}
+        .signature-wrapper{background:#111827;border:2px dashed var(--card-border);border-radius:16px;padding:15px;margin-top:10px;text-align:center}
+        #sig-canvas{background:#fff;border-radius:10px;cursor:crosshair;touch-action:none;width:100%;height:250px;display:block}
+        .muat-info-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+        .muat-info-item{background:rgba(0,0,0,.2);border:1px solid var(--card-border);border-radius:12px;padding:12px;text-align:center}
+        .muat-info-item small{color:var(--text-muted);font-size:9px;text-transform:uppercase;letter-spacing:.5px}
+        .muat-info-item strong{display:block;margin-top:3px;font-size:13px;color:#22d3ee}
+        .sj-wrap{width:100%;max-width:800px;margin:0 auto}
+        .sj-paper{background:#fff!important;color:#000!important;padding:25px 40px;font-family:Arial,Helvetica,sans-serif;box-shadow:0 4px 30px rgba(0,0,0,.18);border:1px solid #ccc;font-size:11px;line-height:1.4}
+        .sj-paper *{color:#000!important}
+        .sj-header-table{width:100%;border-collapse:collapse;margin-bottom:2px}.sj-header-table td{padding:0;border:none;vertical-align:top;color:#000!important}
+        .sj-header-left h1{font-size:18pt;margin:0;font-weight:bold;font-family:Arial Narrow,Arial,sans-serif}
+        .sj-header-left p{font-size:9pt;margin:1px 0;color:#000!important}
+        .sj-header-right{text-align:right;padding-top:5px}.sj-header-right h2{font-size:14pt;margin:0;font-weight:bold;letter-spacing:2px;text-transform:uppercase}.sj-header-right h3{font-size:11pt;margin:0;font-weight:bold;letter-spacing:2px;text-transform:uppercase}.sj-header-right .sj-date{font-size:10pt;margin-top:8px;font-weight:bold}
+        .sj-line{border-top:3px solid #000;margin:5px 0 12px 0}
+        .sj-info-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10pt}.sj-info-table td{padding:2px 0;border:none;color:#000!important}.sj-info-table .label{width:120px;font-weight:bold}
+        .sj-table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:0}.sj-table th,.sj-table td{border:1px solid #000;padding:5px 8px;text-align:left;font-size:9pt}.sj-table th{background:#e0e0e0!important;-webkit-print-color-adjust:exact;font-weight:bold;text-align:center}.sj-table td.center{text-align:center}.sj-table tfoot td{background:#f5f5f5!important;-webkit-print-color-adjust:exact;font-weight:bold}
+        .sj-nb{margin-top:8px;font-size:7.5pt;font-style:italic;border:1px solid #999;padding:5px 8px;color:#333!important;background:#fffdf0!important;-webkit-print-color-adjust:exact}
+        .sj-signatures{width:100%;border-collapse:collapse;margin-top:45px;font-size:8pt;text-align:center}.sj-signatures td{border:none;vertical-align:top;padding:0 5px;width:20%}.sj-sign-title{font-weight:bold;margin-bottom:45px}.sj-sign-line{border-top:1px solid #000;padding-top:4px;margin:0 10%}
+        #modal-sj .modal-content{max-width:860px;background:#d1d5db;padding:22px}
+        .item-row{display:grid;grid-template-columns:3fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:end}
+        .item-row .form-group{margin-bottom:0}
+        .no-data-msg{text-align:center;padding:40px;color:var(--text-muted)}
+        .no-data-msg i{font-size:28px;display:block;margin-bottom:10px}
+        .delete-zone{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:16px;padding:20px;margin-top:20px}
+        .delete-zone h4{color:#f87171;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .info-banner{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.15);padding:12px 16px;border-radius:12px;margin-bottom:18px;font-size:11px;color:#22d3ee}
+        .fb-config-zone{background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.15);border-radius:16px;padding:20px}
+        .fb-config-zone h4{color:#fbbf24;font-size:12px;margin-bottom:12px}
+        .fb-log{background:rgba(0,0,0,.3);border:1px solid var(--card-border);border-radius:10px;padding:12px 16px;margin-top:14px;max-height:180px;overflow-y:auto;font-family:'Courier New',monospace;font-size:10px;line-height:1.6;color:#94a3b8}
+        .fb-log .log-ok{color:#34d399}.fb-log .log-err{color:#f87171}.fb-log .log-warn{color:#fbbf24}.fb-log .log-info{color:#60a5fa}
+        @media(max-width:900px){nav{width:220px;padding:20px 14px}main{margin-left:220px;padding:20px}.top-bar h2{font-size:1.4rem}}
+        @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}.nav-item i{font-size:18px}main{margin-left:60px;padding:15px}.top-bar h2{font-size:1.1rem}.form-grid{grid-template-columns:1fr}}
+        @media print{body *{visibility:hidden}#modal-sj,#modal-sj *{visibility:visible}#modal-sj{position:absolute;left:0;top:0;width:100%;padding:0;background:#fff}.sj-paper{box-shadow:none;border:none;padding:20px 30px;width:100%;max-width:100%}.no-print{display:none!important}}
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <div style="font-size:36px;margin-bottom:20px;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent"><i class="fa-solid fa-network-wired"></i></div>
+        <h2>LOG-House Corp.</h2>
+        <p style="color:var(--text-muted);font-size:12px;margin-bottom:30px;text-transform:uppercase;letter-spacing:1px">Supply Chain Management Hub.</p>
+        <div class="form-group" style="text-align:left"><label>Username</label><input type="text" id="login-username" placeholder="Username" autocomplete="off" required></div>
+        <div class="form-group" style="text-align:left"><label>Password</label><input type="password" id="login-pass" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')prosesLogin()"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="prosesLogin()">Masuk <i class="fa fa-arrow-right"></i></button>
+        <p style="margin-top:20px;font-size:10px;color:rgba(148,163,184,.35)">Default: admin/123 atau spv/123</p>
+    </div>
+</div>
+
+<nav id="sidebar" style="display:none">
+    <div class="brand"><i class="fa-solid fa-bezier-curve"></i><span class="brand-text">LOG-House <span style="font-size:10px;color:#22d3ee;border:1px solid #22d3ee;padding:1px 6px;border-radius:6px">SCM</span></span></div>
+    <div class="nav-item active" onclick="showView('dashboard')"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></div>
+    <div class="nav-item" onclick="showView('view1')"><i class="fa-solid fa-circle-plus"></i> <span>Pesanan Baru</span></div>
+    <div class="nav-item" onclick="showView('view2')"><i class="fa-solid fa-truck-ramp-box"></i> <span>Alokasi Armada</span></div>
+    <div class="nav-item" onclick="showView('view-muat')"><i class="fa-solid fa-truck-loading"></i> <span>Konfirmasi Muat</span></div>
+    <div class="nav-item" onclick="showView('view-spp')"><i class="fa-solid fa-stamp"></i> <span>Form SPP</span></div>
+    <div class="nav-item" onclick="showView('view-po')"><i class="fa-solid fa-file-contract"></i> <span>Form PO</span></div>
+    <div class="nav-item spv-only" onclick="showView('view3')"><i class="fa-solid fa-triangle-exclamation"></i> <span>Form Revise</span></div>
+    <div class="nav-item spv-only" onclick="showView('view-settings')"><i class="fa-solid fa-user-shield"></i> <span>Manajemen Akun</span></div>
+    <div class="nav-item" onclick="showView('view-master')"><i class="fa-solid fa-folder-tree"></i> <span>Master Data</span></div>
+    <button class="btn btn-danger" style="margin-top:auto;justify-content:center" onclick="prosesLogout()"><i class="fa-solid fa-power-off"></i> <span>Keluar</span></button>
+</nav>
+
+<main id="main-content">
+    <div class="top-bar">
+        <h2 id="view-title">Panel Dashboard</h2>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div id="sync-indicator" class="sync-badge offline"><span class="sync-dot offline"></span> Lokal</div>
+            <div id="user-badge" style="font-weight:600;font-size:11px;padding:10px 18px;background:rgba(255,255,255,.04);border:1px solid var(--card-border);border-radius:30px;text-transform:uppercase"></div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="view active">
+        <div id="fb-setup-banner" style="background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);padding:14px 20px;border-radius:14px;margin-bottom:20px;display:none;align-items:center;gap:12px">
+            <i class="fa-solid fa-cloud-arrow-up" style="font-size:18px;color:#fbbf24"></i>
+            <div style="flex:1"><strong style="color:#fbbf24;font-size:12px">Sinkronisasi Cloud Belum Aktif</strong><p style="font-size:10px;color:var(--text-muted);margin-top:2px">Data hanya di browser ini. Buka <strong>Manajemen Akun → Konfigurasi Firebase</strong> untuk sinkronisasi.</p></div>
+        </div>
+        <div class="card" style="padding:0;border-radius:20px;overflow:hidden">
+            <div class="filter-bar" style="border:none;border-bottom:1px solid var(--card-border);border-radius:0;margin:0;flex-direction:column;align-items:stretch">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                    <input type="date" id="filter-mulai" onchange="renderMainTable()">
+                    <span class="separator">s/d</span>
+                    <input type="date" id="filter-selesai" onchange="renderMainTable()">
+                    <input type="text" id="filter-idorder" placeholder="ID Order" oninput="renderMainTable()" style="max-width:150px">
+                    <input type="text" id="filter-fgw" placeholder="No FGW/SJ" oninput="renderMainTable()" style="max-width:170px">
+                    <input type="text" id="filter-spp" placeholder="No SPP" oninput="renderMainTable()" style="max-width:140px">
+                    <input type="text" id="filter-po" placeholder="No PO" oninput="renderMainTable()" style="max-width:140px">
+                    <input type="text" id="filter-nopol" placeholder="Nopol" oninput="renderMainTable()" style="max-width:130px">
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+                    <select id="filter-bulan" onchange="renderMainTable()"><option value="">Semua Bulan</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">Mei</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Ags</option><option value="09">Sep</option><option value="10">Okt</option><option value="11">Nov</option><option value="12">Des</option></select>
+                    <select id="filter-vendor" onchange="renderMainTable()"><option value="">Semua Vendor</option></select>
+                    <select id="filter-tujuan" onchange="renderMainTable()"><option value="">Semua Tujuan</option></select>
+                    <select id="filter-status" onchange="renderMainTable()"><option value="">Semua Muat</option><option value="MUAT">LOADED</option><option value="BELUM">WAITING</option></select>
+                    <select id="filter-status-spp" onchange="renderMainTable()"><option value="">Semua SPP</option><option value="PENDING">PENDING</option><option value="DIBUAT">DIBUAT</option><option value="SELESAI">DISETUJUI</option></select>
+                    <div class="spacer"></div>
+                    <button class="btn btn-danger btn-xs" onclick="resetFilter()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                    <button class="btn btn-success btn-sm" onclick="eksporKeExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                    <button class="btn btn-primary btn-sm" onclick="eksporKePDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                </div>
+            </div>
+            <div class="table-container" style="border:none;border-radius:0;margin:0">
+                <table id="tableMain"><thead><tr><th>No</th><th>Tanggal</th><th>ID Order</th><th>Tujuan</th><th>Vendor</th><th>Rit</th><th>Armada / Kargo / SJ</th><th>Muat</th><th>PO</th><th>SPP</th><th>Catatan</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="view1" class="view"><div class="card"><h2><i class="fa-solid fa-square-plus" style="color:#22d3ee"></i> Form Booking Baru</h2><form id="form1"><div class="form-grid"><div class="form-group"><label>Tujuan</label><select id="f1-tujuan" onchange="loadVendors()" required></select></div><div class="form-group"><label>Tanggal</label><input type="date" id="f1-tgl" required></div><div class="form-group"><label>Jumlah Ritase</label><input type="number" id="f1-qty" min="1" value="1" required></div><div class="form-group"><label>Catatan</label><textarea id="f1-ket" rows="2" placeholder="Catatan..."></textarea></div></div><label style="margin-top:10px">Pilih Vendor</label><div id="f1-vendor-list" class="radio-group"></div><br><button type="submit" class="btn btn-primary">Simpan Manifest</button></form></div></div>
+
+    <div id="view2" class="view"><div class="card"><h2><i class="fa-solid fa-truck-field" style="color:#34d399"></i> Alokasi Armada</h2><div class="form-grid"><div class="form-group"><label>Pilih Order</label><select id="f2-select-order" onchange="prepareFleetForm()"></select></div><div class="form-group"><label>Ritase Aktual</label><input type="number" id="f2-qty-actual" min="1" value="1" onchange="generateFleetInputs()"></div></div><hr><form id="form2"><div id="fleet-inputs-container"></div><button type="submit" id="f2-submit" class="btn btn-success" disabled>Alokasikan</button></form></div></div>
+
+    <div id="view-muat" class="view"><div class="card" style="border-color:#0ea5e9"><h2><i class="fa-solid fa-truck-loading" style="color:#0ea5e9"></i> Konfirmasi Muat & Surat Jalan</h2>
+        <div class="search-bar-form"><label><i class="fa-solid fa-magnifying-glass"></i> Cari:</label><input type="text" id="fmuat-search" placeholder="ID Order, Tujuan, Nopol, SJ..." oninput="filterMuatSelect()"><input type="date" id="fmuat-search-date" onchange="filterMuatSelect()"></div>
+        <div class="form-group" style="max-width:500px"><label>Pilih Order</label><select id="fmuat-select-order" onchange="loadMuatDetails()"></select></div>
+        <hr><div id="muat-details-container" style="display:none"><div class="muat-info-bar"><div class="muat-info-item"><small>Tujuan</small><strong id="muat-tujuan">-</strong></div><div class="muat-info-item"><small>Vendor</small><strong id="muat-vendor">-</strong></div><div class="muat-info-item"><small>Rit</small><strong id="muat-qty">-</strong></div><div class="muat-info-item"><small>Est. No. SJ</small><strong id="muat-nosj-suggest" style="font-size:10px">-</strong></div></div><form id="formConfirmMuat"><label style="color:#0ea5e9;margin-bottom:10px;display:block"><i class="fa-solid fa-boxes-stacked"></i> Rincian Kargo & No. SJ:</label><div id="dynamic-muat-inputs"></div><div class="form-group" style="margin-top:20px;border-top:1px solid var(--card-border);padding-top:18px;max-width:400px"><label>Sandi SPV</label><input type="password" id="fmuat-spv-password" placeholder="Password SPV" required></div><div class="form-group"><label style="font-weight:600;color:#fbbf24;margin-bottom:10px;display:inline-block"><i class="fa-solid fa-pen-nib"></i> Tanda Tangan SPV:</label><div class="signature-wrapper"><canvas id="sig-canvas"></canvas><div style="margin-top:10px;display:flex;gap:8px;justify-content:center"><button type="button" class="btn btn-danger btn-xs" onclick="clearSignature()"><i class="fa-solid fa-eraser"></i> Bersihkan</button></div></div></div><button type="submit" class="btn btn-success" style="width:100%;justify-content:center;margin-top:12px"><i class="fa-solid fa-file-signature"></i> Sahkan & Terbitkan Surat Jalan</button></form></div></div></div>
+
+    <div id="view-spp" class="view"><div class="card"><h2><i class="fa-solid fa-stamp" style="color:#fbbf24"></i> Form SPP</h2>
+        <div class="info-banner"><i class="fa-solid fa-circle-info"></i> SPP hanya untuk order <strong>LOADED</strong>. Alur: <strong>PENDING → DIBUAT → DISETUJUI</strong>.</div>
+        <div class="search-bar-form"><label><i class="fa-solid fa-magnifying-glass"></i> Cari:</label><input type="text" id="fspp-search" placeholder="ID Order, Tujuan..." oninput="filterSPPSelect()"><input type="date" id="fspp-search-date" onchange="filterSPPSelect()"></div>
+        <form id="formSPP"><div class="form-grid"><div class="form-group"><label>Order (LOADED)</label><select id="fspp-select-order" required></select></div><div class="form-group"><label>Status SPP</label><select id="fspp-status" required><option value="DIBUAT">DIBUAT</option><option value="SELESAI">DISETUJUI</option><option value="PENDING">DITAHAN</option></select></div></div><div class="form-group" style="max-width:500px"><label>Nomor SPP</label><input type="text" id="fspp-no" required></div><button type="submit" class="btn btn-warning" style="color:#fff"><i class="fa-solid fa-stamp"></i> Terbitkan / Update SPP</button></form></div></div>
+
+    <div id="view-po" class="view"><div class="card"><h2><i class="fa-solid fa-file-invoice-dollar" style="color:#22d3ee"></i> Form PO</h2>
+        <div class="info-banner"><i class="fa-solid fa-circle-info"></i> PO <strong>hanya muncul</strong> untuk order dengan SPP <strong>DISETUJUI</strong>.</div>
+        <div class="search-bar-form"><label><i class="fa-solid fa-magnifying-glass"></i> Cari:</label><input type="text" id="fpo-search" placeholder="ID Order..." oninput="filterPOSelect()"><input type="date" id="fpo-search-date" onchange="filterPOSelect()"></div>
+        <form id="formPO"><div class="form-group" style="max-width:600px"><label>Order (SPP DISETUJUI)</label><select id="fpo-select-order" required></select></div><div class="form-group" style="max-width:500px"><label>Nomor PO</label><input type="text" id="fpo-no" required></div><button type="submit" class="btn btn-primary"><i class="fa-solid fa-file-contract"></i> Tautkan PO</button></form></div></div>
+
+    <div id="view3" class="view"><div class="card">
+        <h2><i class="fa-solid fa-triangle-exclamation" style="color:#ef4444"></i> Form Revise <span style="font-size:10px;color:#fbbf24;font-weight:400">(SPV Only)</span></h2>
+        <div class="search-bar-form" style="border-color:rgba(239,68,68,.15);background:rgba(239,68,68,.03)"><label style="color:#f87171"><i class="fa-solid fa-magnifying-glass"></i> Cari:</label><input type="text" id="f3-search" placeholder="ID Order..." oninput="filterReviseSelect()"><input type="date" id="f3-search-date" onchange="filterReviseSelect()"></div>
+        <div class="form-group" style="max-width:500px"><label>Pilih Order</label><select id="f3-select-order" onchange="onReviseOrderSelected()"></select></div>
+        <hr>
+        <div id="revise-order-info" style="display:none;margin-bottom:18px;padding:16px;background:rgba(0,0,0,.2);border:1px solid var(--card-border);border-radius:14px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"><div><small style="color:var(--text-muted);font-size:9px;text-transform:uppercase">ID</small><div id="rev-info-id" style="color:#22d3ee;font-weight:700;font-size:12px;margin-top:2px">-</div></div><div><small style="color:var(--text-muted);font-size:9px;text-transform:uppercase">Tujuan</small><div id="rev-info-tujuan" style="font-weight:700;font-size:12px;margin-top:2px">-</div></div><div><small style="color:var(--text-muted);font-size:9px;text-transform:uppercase">Vendor</small><div id="rev-info-vendor" style="font-weight:700;font-size:12px;margin-top:2px">-</div></div><div><small style="color:var(--text-muted);font-size:9px;text-transform:uppercase">Tanggal</small><div id="rev-info-tgl" style="font-weight:700;font-size:12px;margin-top:2px">-</div></div></div></div>
+        <form id="form3"><div id="spv-inputs-container"></div><div class="form-group"><label>Alasan Revisi</label><textarea id="f3-alasan" required></textarea></div><div class="form-group" style="max-width:400px"><label>Sandi SPV</label><input type="password" id="f3-spv-pass" required></div><button type="submit" class="btn btn-warning" style="color:#fff"><i class="fa-solid fa-pen-to-square"></i> Update Revisi</button></form>
+        <div id="revise-delete-zone" class="delete-zone" style="display:none"><h4><i class="fa-solid fa-skull-crossbones"></i> Zona Penghapusan Permanen</h4><p style="font-size:11px;color:var(--text-muted);margin-bottom:14px">Hapus order <strong id="revise-delete-id" style="color:#f87171"></strong>. <strong style="color:#f87171">Tidak bisa dibatalkan.</strong></p><div class="form-group" style="max-width:400px;margin-bottom:12px"><label>Sandi SPV</label><input type="password" id="revise-delete-pass" placeholder="Password SPV"></div><button class="btn btn-danger" onclick="executeReviseDelete()" style="background:var(--gradient-danger);border:none"><i class="fa-solid fa-trash-can"></i> Hapus Order Permanen</button></div>
+    </div></div>
+
+    <div id="view-settings" class="view">
+        <div class="card"><h2><i class="fa-solid fa-user-shield" style="color:#22d3ee"></i> Manajemen Akun</h2><div class="form-grid"><div class="card" style="background:rgba(0,0,0,.2)"><h3>Admin FGW</h3><div class="form-group"><label>Username</label><input type="text" id="set-admin-user"></div><div class="form-group"><label>Password</label><input type="password" id="set-admin-pass"></div><button class="btn btn-primary" onclick="simpanAkun('ADMIN')">Perbarui</button></div><div class="card" style="background:rgba(0,0,0,.2)"><h3>Supervisor</h3><div class="form-group"><label>Username</label><input type="text" id="set-spv-user"></div><div class="form-group"><label>Password</label><input type="password" id="set-spv-pass"></div><button class="btn btn-warning" style="color:#fff" onclick="simpanAkun('SPV')">Perbarui</button></div></div></div>
+        <div class="card fb-config-zone">
+            <h4><i class="fa-solid fa-cloud-arrow-up"></i> Konfigurasi Firebase (Sinkronisasi Cloud)</h4>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:16px">Hubungkan ke Firebase Realtime Database agar data tersinkronisasi ke semua device. <a href="https://console.firebase.google.com/" target="_blank" style="color:#22d3ee;text-decoration:underline">Buka Firebase Console</a></p>
+            <div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);padding:14px 16px;border-radius:12px;margin-bottom:16px;font-size:10.5px;color:#93c5fd">
+                <strong style="color:#60a5fa"><i class="fa-solid fa-book-open"></i> Langkah Setup:</strong>
+                <ol style="margin-top:8px;padding-left:18px;line-height:1.8">
+                    <li>Buka Firebase Console → Create Project</li>
+                    <li>Build → Realtime Database → Create Database → <strong>asia-southeast1</strong> → Start in <strong>test mode</strong></li>
+                    <li>Project Settings → Your apps → Web app → Register → Salin firebaseConfig</li>
+                    <li>Isi nilai di bawah, klik Simpan & Hubungkan</li>
+                </ol>
+            </div>
+            <div class="form-group"><label>Database URL <span style="color:#f87171">*</span></label><input type="text" id="fb-url" placeholder="https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app"></div>
+            <div class="form-grid"><div class="form-group"><label>API Key <span style="color:#f87171">*</span></label><input type="text" id="fb-api" placeholder="AIzaSy..."></div><div class="form-group"><label>Project ID <span style="color:#f87171">*</span></label><input type="text" id="fb-project" placeholder="nama-project"></div></div>
+            <div class="form-group"><label>Auth Domain <span style="color:#94a3b8">(otomatis jika kosong)</span></label><input type="text" id="fb-auth" placeholder="nama-project.firebaseapp.com"></div>
+            <div style="display:flex;gap:10px;margin-top:5px;flex-wrap:wrap">
+                <button class="btn btn-success" onclick="simpanFirebaseConfig()"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan & Hubungkan</button>
+                <button class="btn btn-primary" onclick="testFirebaseConnection()" id="btn-test-fb"><i class="fa-solid fa-plug"></i> Tes Koneksi</button>
+                <button class="btn btn-danger" onclick="putuskanFirebase()"><i class="fa-solid fa-cloud-arrow-down"></i> Putuskan</button>
+            </div>
+            <div id="fb-status-msg" style="margin-top:12px;font-size:11px"></div>
+            <div id="fb-log" class="fb-log" style="display:none"></div>
+        </div>
+    </div>
+
+    <div id="view-master" class="view">
+        <div class="card"><h2><i class="fa-solid fa-map-location-dot"></i> Master Tujuan & Tarif</h2><form id="form-add-tarif" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#22d3ee">+ Tambah Tujuan / Tarif</h3><div class="form-grid"><div class="form-group" id="add-tujuan-select-wrap"><label>Tujuan</label><select id="mt-tujuan" onchange="handleAddTujuanChange()" required><option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option></select></div><div class="form-group" id="add-tujuan-input-wrap" style="display:none"><label>Nama Tujuan Baru</label><div style="display:flex;gap:8px"><input type="text" id="mt-new-tujuan" style="flex:1"><button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewTujuan()"><i class="fa fa-times"></i></button></div></div><div class="form-group"><label>Alamat</label><input type="text" id="mt-alamat" required></div><div class="form-group"><label>Vendor</label><input type="text" id="mt-vendor" required></div><div class="form-group"><label>Tarif (Rp)</label><input type="number" id="mt-harga" required></div><div class="form-group"><label>PPN %</label><input type="number" step="0.1" id="mt-ppn" value="11" required></div></div><button type="submit" class="btn btn-success btn-sm">Simpan</button></form><div class="table-container"><table id="tableMasterTarif"><thead><tr><th>Tujuan</th><th>Alamat</th><th>Vendor</th><th>Tarif</th><th>PPN</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card"><h2><i class="fa-solid fa-users-gear"></i> Master Armada</h2><form id="form-add-armada" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#34d399">+ Tambah Armada</h3><div class="form-grid"><div class="form-group"><label>Sopir</label><input type="text" id="ma-driver" required></div><div class="form-group"><label>Nopol</label><input type="text" id="ma-nopol" required></div><div class="form-group"><label>HP</label><input type="text" id="ma-hp" required></div></div><button type="submit" class="btn btn-primary btn-sm">Simpan</button></form><div class="table-container"><table id="tableArmada"><thead><tr><th>Sopir</th><th>Nopol</th><th>HP</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card"><h2><i class="fa-solid fa-box-archive"></i> Master Barang</h2><form id="form-add-barang" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#0ea5e9">+ Tambah Barang</h3><div class="form-grid"><div class="form-group"><label>Nama</label><input type="text" id="mbg-nama" required></div><div class="form-group"><label>Kode</label><input type="text" id="mbg-kode" required></div><div class="form-group"><label>Satuan</label><input type="text" id="mbg-satuan" value="BOX" required></div><div class="form-group"><label>Berat/Unit (Kg)</label><input type="number" id="mbg-berat" value="30" required></div></div><button type="submit" class="btn btn-primary btn-sm">Simpan</button></form><div class="table-container"><table id="tableBarang"><thead><tr><th>Nama</th><th>Kode</th><th>Satuan</th><th>Berat/Unit</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card" style="border-color:rgba(239,68,68,.3)"><h2 style="color:#f87171"><i class="fa-solid fa-user-slash"></i> Blacklist</h2><form id="form-add-blacklist" style="background:rgba(239,68,68,.02);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid rgba(239,68,68,.2)"><h3 style="font-size:11px;margin-bottom:12px;color:#f87171">+ Tambah</h3><div class="form-grid"><div class="form-group"><label>Tipe</label><select id="mb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div><div class="form-group"><label>Nilai</label><input type="text" id="mb-value" required></div></div><div class="form-group"><label>Alasan</label><textarea id="mb-alasan" rows="2" required></textarea></div><button type="submit" class="btn btn-danger btn-sm" style="background:var(--gradient-danger);border:none">Simpan</button></form><div class="table-container" style="border-color:rgba(239,68,68,.2)"><table id="tableBlacklist"><thead><tr style="background:rgba(239,68,68,.05)"><th>Tipe</th><th>Nilai</th><th>Alasan</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+</main>
+
+<div id="modal-sj" class="modal"><div class="modal-content" style="max-width:860px;background:#d1d5db;padding:22px"><div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px" class="no-print"><button class="btn btn-success btn-sm" onclick="cetakSuratJalan()"><i class="fa-solid fa-print"></i> Cetak</button><button class="btn btn-primary btn-sm" onclick="simpanSuratJalanPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button><button class="btn btn-danger btn-sm" onclick="closeModal('modal-sj')"><i class="fa-solid fa-xmark"></i> Tutup</button></div><div class="sj-wrap"><div class="sj-paper" id="sj-print-area"></div></div></div></div>
+<div id="modal-blacklist-confirm" class="modal" style="background:rgba(7,10,18,.93)"><div class="modal-content" style="max-width:600px;border-color:#ef4444;border-width:2px"><div class="modal-header"><h3 style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> Peringatan Blacklist!</h3><span class="modal-close" onclick="closeModal('modal-blacklist-confirm')">&times;</span></div><div style="margin-bottom:18px"><p style="font-size:12px;margin-bottom:12px">Terdeteksi <strong style="color:#f87171">BLACKLIST</strong>:</p><div id="blacklist-violations-list"></div><div class="form-group"><label style="color:#f8fafc;font-weight:600">Alasan Dispensasi:</label><textarea id="blacklist-bypass-reason" rows="3" required></textarea></div></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-sm" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted)" onclick="closeModal('modal-blacklist-confirm')">Batal</button><button class="btn btn-warning btn-sm" onclick="executeBypassSubmission()"><i class="fa-solid fa-shield-halved"></i> Izinkan</button></div></div></div>
+<div id="modal-delete-confirm" class="modal" style="background:rgba(7,10,18,.93)"><div class="modal-content" style="max-width:480px;border-color:#ef4444;border-width:2px"><div class="modal-header"><h3 style="color:#ef4444"><i class="fa-solid fa-trash-can"></i> Hapus Order?</h3><span class="modal-close" onclick="closeModal('modal-delete-confirm')">&times;</span></div><div style="margin-bottom:18px"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Hapus <strong id="delete-order-id" style="color:#f87171"></strong> permanen?</p><div class="form-group"><label>Password Akun</label><input type="password" id="delete-confirm-pass" placeholder="Password Anda" required></div></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-sm" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted)" onclick="closeModal('modal-delete-confirm')">Batal</button><button class="btn btn-danger btn-sm" onclick="executeDeleteOrder()"><i class="fa-solid fa-trash-can"></i> Hapus</button></div></div></div>
+<div id="modal-edit-tarif" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Tarif</h3><span class="modal-close" onclick="closeModal('modal-edit-tarif')">&times;</span></div><form id="form-edit-tarif-exec"><input type="hidden" id="edit-tarif-idx"><input type="hidden" id="et-tujuan-old"><div class="form-group"><label>Tujuan</label><input type="text" id="et-tujuan" required></div><div class="form-group"><label>Alamat</label><input type="text" id="et-alamat" required></div><div class="form-group"><label>Vendor</label><input type="text" id="et-vendor" required></div><div class="form-grid"><div class="form-group"><label>Tarif</label><input type="number" id="et-harga" required></div><div class="form-group"><label>PPN</label><input type="number" step="0.1" id="et-ppn" required></div></div><button type="submit" class="btn btn-success" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
+<div id="modal-edit-armada" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Sopir</h3><span class="modal-close" onclick="closeModal('modal-edit-armada')">&times;</span></div><form id="form-edit-armada-exec"><input type="hidden" id="edit-armada-idx"><div class="form-group"><label>Nama</label><input type="text" id="ea-driver" required></div><div class="form-group"><label>Nopol</label><input type="text" id="ea-nopol" required></div><div class="form-group"><label>HP</label><input type="text" id="ea-hp" required></div><button type="submit" class="btn btn-primary" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
+<div id="modal-edit-barang" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Barang</h3><span class="modal-close" onclick="closeModal('modal-edit-barang')">&times;</span></div><form id="form-edit-barang-exec"><input type="hidden" id="edit-barang-idx"><div class="form-grid"><div class="form-group"><label>Nama</label><input type="text" id="ebg-nama" required></div><div class="form-group"><label>Kode</label><input type="text" id="ebg-kode" required></div><div class="form-group"><label>Satuan</label><input type="text" id="ebg-satuan" required></div><div class="form-group"><label>Berat/Unit</label><input type="number" id="ebg-berat" required></div></div><button type="submit" class="btn btn-success" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
+<div id="modal-edit-blacklist" class="modal"><div class="modal-content" style="border-color:rgba(239,68,68,.4)"><div class="modal-header"><h3 style="color:#f87171">Edit Blacklist</h3><span class="modal-close" onclick="closeModal('modal-edit-blacklist')">&times;</span></div><form id="form-edit-blacklist-exec"><input type="hidden" id="edit-blacklist-idx"><div class="form-group"><label>Tipe</label><select id="eb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div><div class="form-group"><label>Nilai</label><input type="text" id="eb-value" required></div><div class="form-group"><label>Alasan</label><textarea id="eb-alasan" rows="3" required></textarea></div><button type="submit" class="btn btn-danger" style="width:100%;margin-top:12px;background:var(--gradient-danger);border:none">Simpan</button></form></div></div>
+
+<script>
+/* ================================================================
+   DATA LOKAL
+   ================================================================ */
+let appCreds=JSON.parse(localStorage.getItem('loghouse_creds'))||{ADMIN:{user:'admin',pass:'123'},SPV:{user:'spv',pass:'123'}};
+let activeRole=null,activeRoleKey=null;
+let DB_ORDERS=JSON.parse(localStorage.getItem('db_fleet_orders'))||[];
+let DB_TUJUAN=JSON.parse(localStorage.getItem('db_tujuan'))||[
+    {tujuan:'SJA KARAWANG',alamat:'Jl. Surya Madya Kav. I-18 Ds. Kuta Mekar Kec. Ciampel Karawang 41361'},
+    {tujuan:'FGW SURABAYA',alamat:'Jl. Raya Panjunan KM. 3 Sukodono Sidoarjo 61258'}
+];
+let MASTER_DATA=JSON.parse(localStorage.getItem('db_master_tarif'))||[{tujuan:'SJA KARAWANG',vendor:'CTL',harga:4675000,ppn:11}];
+let DB_ARMADA=JSON.parse(localStorage.getItem('db_master_armada'))||[{driver:"Slamet Riyadi",nopol:"B 9123 CCU",hp:"081388772211"}];
+let DB_BLACKLIST=JSON.parse(localStorage.getItem('db_master_blacklist'))||[];
+let DB_BARANG=JSON.parse(localStorage.getItem('db_master_barang'))||[{nama:"SIC 18 T",kode:"00J.KPI09.K0307002XX",satuan:"BOX",beratPerUnit:30}];
+let PENDING_BYPASS_TYPE=null,PENDING_BYPASS_DATA=null,PENDING_DELETE_ID=null;
+
+// Migrasi data lama
+DB_ORDERS.forEach(o=>{
+    if(!o.fleetData)o.fleetData=[];
+    o.fleetData.forEach(f=>{if(!f.items||!f.items.length)f.items=[]});
+    if(!o.statusSPP)o.statusSPP='PENDING';
+});
+
+/* ================================================================
+   FIREBASE — DIPERBAIKI TOTAL
+   ================================================================ */
+let firebaseApp=null,firebaseDB=null,syncStatus='offline';
+let isSavingToCloud=false;
+let remoteUpdateTimer=null;
+
+function getStoredFBConfig(){return JSON.parse(localStorage.getItem('loghouse_fb_config')||'null')}
+
+// Konversi Firebase Object ke Array dengan aman
+function fbToArray(obj){
+    if(!obj)return[];
+    if(Array.isArray(obj))return obj.filter(x=>x!=null);
+    if(typeof obj==='object'){
+        const keys=Object.keys(obj);
+        if(!keys.length)return[];
+        const isNum=keys.every(k=>/^\d+$/.test(k));
+        if(isNum)return keys.sort((a,b)=>parseInt(a)-parseInt(b)).map(k=>obj[k]).filter(x=>x!=null);
+        return keys.map(k=>obj[k]).filter(x=>x!=null);
+    }
+    return[];
+}
+
+function fbLog(msg,type){
+    const logEl=document.getElementById('fb-log');
+    if(logEl){
+        logEl.style.display='block';
+        const cls=type==='ok'?'log-ok':type==='err'?'log-err':type==='warn'?'log-warn':'log-info';
+        const now=new Date().toLocaleTimeString('id-ID');
+        logEl.innerHTML+='<div class="'+cls+'">['+now+'] '+msg+'</div>';
+        logEl.scrollTop=logEl.scrollHeight;
+    }
+    if(type==='err')console.error('[FB]',msg);
+    else console.log('[FB]',msg);
+}
+
+function setSyncStatus(s){
+    syncStatus=s;
+    const el=document.getElementById('sync-indicator');
+    if(!el)return;
+    const labels={offline:'Lokal',online:'Cloud Sync',syncing:'Sinkronisasi...',error:'Error Koneksi'};
+    el.className='sync-badge '+s;
+    el.innerHTML='<span class="sync-dot '+s+'"></span> '+(labels[s]||s);
+}
+
+function initFirebase(){
+    const cfg=getStoredFBConfig();
+    if(!cfg||!cfg.databaseURL||!cfg.apiKey||!cfg.projectId){
+        setSyncStatus('offline');
+        console.log('[FB] Tidak ada konfigurasi lengkap. Mode lokal.');
+        return;
+    }
+    try{
+        if(firebaseApp){try{firebaseApp.delete()}catch(e){}}
+        firebaseApp=null;firebaseDB=null;
+
+        const fbConfig={
+            apiKey:cfg.apiKey,
+            authDomain:cfg.authDomain||(cfg.projectId+'.firebaseapp.com'),
+            databaseURL:cfg.databaseURL,
+            projectId:cfg.projectId
+        };
+
+        fbLog('Menginisialisasi Firebase...','info');
+        fbLog('Project: '+cfg.projectId,'info');
+        fbLog('DB URL: '+cfg.databaseURL,'info');
+
+        firebaseApp=firebase.initializeApp(fbConfig);
+        firebaseDB=firebase.database();
+        setSyncStatus('syncing');
+
+        firebaseDB.ref('.info/connected').on('value',snap=>{
+            if(snap.val()){setSyncStatus('online');fbLog('Koneksi real-time AKTIF','ok')}
+            else{if(syncStatus!=='error')setSyncStatus('offline')}
+        });
+
+        loadFromFirebase();
+        setupRealtimeListeners();
+
+    }catch(e){
+        console.error('[FB] Init error:',e);
+        setSyncStatus('error');
+        fbLog('ERROR: '+e.message,'err');
+        fbLog('Pastikan databaseURL, apiKey, projectId benar.','err');
+    }
+}
+
+function loadFromFirebase(){
+    if(!firebaseDB)return;
+    fbLog('Mengambil data dari cloud...','info');
+    firebaseDB.ref('/').once('value').then(snap=>{
+        const d=snap.val();
+        if(!d){fbLog('Cloud kosong. Mengunggah data lokal...','warn');setSyncStatus('online');saveToFirebase();return}
+        fbLog('Data diterima. Memproses...','info');
+        if(d.orders)DB_ORDERS=fbToArray(d.orders);
+        if(d.tujuan)DB_TUJUAN=fbToArray(d.tujuan);
+        if(d.master_tarif)MASTER_DATA=fbToArray(d.master_tarif);
+        if(d.armada)DB_ARMADA=fbToArray(d.armada);
+        if(d.blacklist)DB_BLACKLIST=fbToArray(d.blacklist);
+        if(d.barang)DB_BARANG=fbToArray(d.barang);
+        if(d.creds&&typeof d.creds==='object'&&!Array.isArray(d.creds))appCreds=d.creds;
+        DB_ORDERS.forEach(o=>{if(!o.fleetData)o.fleetData=[];if(!o.statusSPP)o.statusSPP='PENDING';o.fleetData.forEach(f=>{if(!f.items)f.items=[]})});
+        saveLocal();
+        setSyncStatus('online');
+        fbLog('Sinkronisasi awal selesai. '+DB_ORDERS.length+' order.','ok');
+        if(document.querySelector('.view.active')?.id==='dashboard')renderMainTable();
+    }).catch(e=>{
+        setSyncStatus('error');
+        fbLog('GAGAL mengambil data: '+e.message,'err');
+        if(e.message&&e.message.includes('permission_denied')){
+            fbLog('RULES ERROR: Ubah ke test mode! Firebase Console → Realtime Database → Rules → {".read":true,".write":true}','err');
+        }else if(e.message&&e.message.includes('not_found')){
+            fbLog('Database belum dibuat. Buka Firebase Console → Build → Realtime Database → Create Database','err');
+        }
+    });
+}
+
+function setupRealtimeListeners(){
+    if(!firebaseDB)return;
+    fbLog('Memasang listener real-time...','info');
+    firebaseDB.ref('/').on('value',snap=>{
+        if(isSavingToCloud)return;
+        const d=snap.val();
+        if(!d)return;
+        clearTimeout(remoteUpdateTimer);
+        remoteUpdateTimer=setTimeout(()=>{
+            fbLog('Update dari cloud. Menyinkronkan...','info');
+            if(d.orders)DB_ORDERS=fbToArray(d.orders);
+            if(d.tujuan)DB_TUJUAN=fbToArray(d.tujuan);
+            if(d.master_tarif)MASTER_DATA=fbToArray(d.master_tarif);
+            if(d.armada)DB_ARMADA=fbToArray(d.armada);
+            if(d.blacklist)DB_BLACKLIST=fbToArray(d.blacklist);
+            if(d.barang)DB_BARANG=fbToArray(d.barang);
+            if(d.creds&&typeof d.creds==='object'&&!Array.isArray(d.creds))appCreds=d.creds;
+            DB_ORDERS.forEach(o=>{if(!o.fleetData)o.fleetData=[];if(!o.statusSPP)o.statusSPP='PENDING';o.fleetData.forEach(f=>{if(!f.items)f.items=[]})});
+            saveLocal();
+            fbLog('Sinkronisasi selesai.','ok');
+            if(document.querySelector('.view.active')?.id==='dashboard')renderMainTable();
+        },800);
+    });
+}
+
+function saveToFirebase(){
+    if(!firebaseDB||syncStatus==='error')return;
+    isSavingToCloud=true;
+    setSyncStatus('syncing');
+    const data=JSON.parse(JSON.stringify({
+        orders:DB_ORDERS.reduce((o,x)=>{o[x.id]=x;return o},{}),
+        tujuan:DB_TUJUAN,master_tarif:MASTER_DATA,armada:DB_ARMADA,
+        blacklist:DB_BLACKLIST,barang:DB_BARANG,creds:appCreds,
+        _lastUpdated:firebase.database.ServerValue.TIMESTAMP
+    }));
+    fbLog('Mengunggah ke cloud...','info');
+    firebaseDB.ref('/').update(data).then(()=>{
+        setSyncStatus('online');
+        fbLog('Data berhasil diunggah.','ok');
+        setTimeout(()=>{isSavingToCloud=false},2000);
+    }).catch(e=>{
+        setSyncStatus('error');
+        isSavingToCloud=false;
+        fbLog('GAGAL upload: '+e.message,'err');
+        if(e.message&&e.message.includes('permission_denied')){
+            fbLog('Ubah database rules ke test mode!','err');
+        }
+    });
+}
+
+function saveLocal(){
+    localStorage.setItem('db_fleet_orders',JSON.stringify(DB_ORDERS));
+    localStorage.setItem('db_tujuan',JSON.stringify(DB_TUJUAN));
+    localStorage.setItem('db_master_tarif',JSON.stringify(MASTER_DATA));
+    localStorage.setItem('db_master_armada',JSON.stringify(DB_ARMADA));
+    localStorage.setItem('db_master_blacklist',JSON.stringify(DB_BLACKLIST));
+    localStorage.setItem('db_master_barang',JSON.stringify(DB_BARANG));
+    localStorage.setItem('loghouse_creds',JSON.stringify(appCreds));
+}
+function saveData(){saveLocal();if(!isSavingToCloud)saveToFirebase()}
+
+/* ================================================================
+   FIREBASE CONFIG UI
+   ================================================================ */
+function loadFBConfigUI(){
+    const cfg=getStoredFBConfig();
+    if(cfg){document.getElementById('fb-url').value=cfg.databaseURL||'';document.getElementById('fb-api').value=cfg.apiKey||'';document.getElementById('fb-project').value=cfg.projectId||'';document.getElementById('fb-auth').value=cfg.authDomain||''}
+    const el=document.getElementById('fb-status-msg');if(!el)return;
+    if(cfg&&firebaseDB&&syncStatus==='online')el.innerHTML='<span style="color:#34d399"><i class="fa-solid fa-circle-check"></i> Terhubung ke cloud. Data real-time.</span>';
+    else if(cfg&&syncStatus==='error')el.innerHTML='<span style="color:#f87171"><i class="fa-solid fa-circle-xmark"></i> Gagal terhubung. Periksa log di bawah.</span>';
+    else if(cfg)el.innerHTML='<span style="color:#fbbf24"><i class="fa-solid fa-triangle-exclamation"></i> Tersimpan tapi belum terhubung. Klik "Tes Koneksi".</span>';
+    else el.innerHTML='<span style="color:var(--text-muted)"><i class="fa-solid fa-circle-info"></i> Belum dikonfigurasi. Data hanya di browser ini.</span>';
+}
+
+function simpanFirebaseConfig(){
+    const url=document.getElementById('fb-url').value.trim();
+    const api=document.getElementById('fb-api').value.trim();
+    const proj=document.getElementById('fb-project').value.trim();
+    const auth=document.getElementById('fb-auth').value.trim();
+    if(!url){alert('Database URL wajib!');return}
+    if(!api){alert('API Key wajib!');return}
+    if(!proj){alert('Project ID wajib!');return}
+    if(!url.startsWith('https://')){alert('Database URL harus dimulai https://');return}
+    localStorage.setItem('loghouse_fb_config',JSON.stringify({databaseURL:url,apiKey:api,projectId:proj,authDomain:auth||(proj+'.firebaseapp.com')}));
+    alert('Tersimpan! Halaman akan reload...');
+    window.location.reload();
+}
+
+function putuskanFirebase(){
+    if(!confirm('Putuskan koneksi Firebase?'))return;
+    localStorage.removeItem('loghouse_fb_config');
+    alert('Diputus. Reload...');
+    window.location.reload();
+}
+
+function testFirebaseConnection(){
+    const url=document.getElementById('fb-url').value.trim();
+    const api=document.getElementById('fb-api').value.trim();
+    const proj=document.getElementById('fb-project').value.trim();
+    const auth=document.getElementById('fb-auth').value.trim()||(proj?proj+'.firebaseapp.com':'');
+    if(!url||!api||!proj){alert('Isi Database URL, API Key, dan Project ID!');return}
+    const logEl=document.getElementById('fb-log');
+    if(logEl){logEl.style.display='block';logEl.innerHTML=''}
+    fbLog('=== TES KONEKSI ===','info');
+    const btn=document.getElementById('btn-test-fb');
+    btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Mengetes...';
+    try{
+        const testApp=firebase.initializeApp({apiKey:api,authDomain:auth,databaseURL:url,projectId:proj},'test-'+Date.now());
+        const testDB=testApp.database();
+        fbLog('Tes baca data...','info');
+        testDB.ref('/').once('value').then(snap=>{
+            fbLog('Baca OK','ok');
+            const d=snap.val();if(d)fbLog('Node: '+Object.keys(d).join(', '),'ok');else fbLog('Database kosong (normal jika baru)','warn');
+            fbLog('Tes tulis...','info');
+            return testDB.ref('/_test').set({t:firebase.database.ServerValue.TIMESTAMP});
+        }).then(()=>{
+            fbLog('Tulis OK','ok');
+            return testDB.ref('/_test').remove();
+        }).then(()=>{
+            fbLog('Hapus test OK','ok');
+            fbLog('=== SEMUA TES BERHASIL ===','ok');
+            fbLog('Klik "Simpan & Hubungkan" untuk aktifkan.','ok');
+            btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-plug"></i> Tes Koneksi';
+            testApp.delete();
+        }).catch(e=>{
+            fbLog('TES GAGAL: '+e.message,'err');
+            if(e.message.includes('permission_denied'))fbLog('SOLUSI: Ubah rules ke test mode! Firebase Console → Realtime Database → Rules → {".read":true,".write":true}','err');
+            else if(e.message.includes('not_found'))fbLog('SOLUSI: Buat database dulu di Firebase Console → Build → Realtime Database','err');
+            btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-plug"></i> Tes Koneksi';
+            testApp.delete().catch(()=>{});
+        });
+    }catch(e){
+        fbLog('ERROR: '+e.message,'err');
+        btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-plug"></i> Tes Koneksi';
+    }
+}
+
+/* ================================================================
+   UTILITAS
+   ================================================================ */
+function formatTanggal(s){if(!s)return"-";const p=s.split("-");return p.length!==3?s:p[2]+'/'+p[1]+'/'+p[0]}
+function formatTanggalSJ(s){if(!s)return"-";const p=s.split("-");if(p.length!==3)return s;const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];return String(parseInt(p[2])).padStart(2,'0')+' - '+m[parseInt(p[1])-1]+' - '+p[0]}
+function getAlamatTujuan(n){const t=DB_TUJUAN.find(x=>x.tujuan===n);return t?t.alamat:'-'}
+function getRomanMonth(m){return['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][m]}
+function generateNextSJ(){const now=new Date(),yr=now.getFullYear().toString().slice(-2),mo=now.getMonth(),pfx='FGW/'+yr+'/'+getRomanMonth(mo)+'/';let mx=0;DB_ORDERS.forEach(o=>o.fleetData.forEach(f=>{if(f.noSJ&&f.noSJ.startsWith(pfx)){const s=parseInt(f.noSJ.split('/')[3]);if(s>mx)mx=s}}));return pfx+String(mx+1).padStart(3,'0')}
+function buildOrderOption(o){const sjs=o.fleetData?o.fleetData.map(f=>f.noSJ).filter(Boolean).join(', '):'';return'<option value="'+o.id+'">'+formatTanggal(o.tgl)+' | '+o.id+' | '+o.tujuan+' | Rit:'+o.qty+(sjs?' | SJ: '+sjs:'')+'</option>'}
+
+/* ================================================================
+   LOGIN / LOGOUT
+   ================================================================ */
+function prosesLogin(){
+    const u=document.getElementById('login-username').value.trim();
+    const p=document.getElementById('login-pass').value;
+    if(u===appCreds.ADMIN.user&&p===appCreds.ADMIN.pass)grantAccess('Admin FGW','ADMIN');
+    else if(u===appCreds.SPV.user&&p===appCreds.SPV.pass)grantAccess('SPV','SPV');
+    else alert('Username atau Password salah!');
+}
+function grantAccess(role,rk){
+    activeRole=role;activeRoleKey=rk;
+    document.getElementById('login-screen').style.opacity='0';
+    setTimeout(()=>{
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('sidebar').style.display='flex';
+        document.getElementById('main-content').style.display='block';
+    },500);
+    document.getElementById('user-badge').innerText='Akun: '+role;
+    document.getElementById('user-badge').style.color=role==='SPV'?'#fbbf24':'#22d3ee';
+    document.querySelectorAll('.spv-only').forEach(m=>m.style.display=role==='SPV'?'flex':'none');
+    document.getElementById('set-admin-user').value=appCreds.ADMIN.user;
+    document.getElementById('set-spv-user').value=appCreds.SPV.user;
+    window.history.pushState({logged:true},'','#app');
+    showView('dashboard');
+}
+function prosesLogout(){
+    activeRole=null;activeRoleKey=null;
+    document.getElementById('sidebar').style.display='none';
+    document.getElementById('main-content').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('login-screen').style.opacity='1';
+    document.getElementById('login-username').value='';
+    document.getElementById('login-pass').value='';
+    window.location.replace(window.location.pathname);
+}
+window.addEventListener('popstate',function(){if(!activeRole)window.location.replace(window.location.pathname)});
+function simpanAkun(t){
+    if(t==='ADMIN'){appCreds.ADMIN.user=document.getElementById('set-admin-user').value.trim();appCreds.ADMIN.pass=document.getElementById('set-admin-pass').value}
+    else{appCreds.SPV.user=document.getElementById('set-spv-user').value.trim();appCreds.SPV.pass=document.getElementById('set-spv-pass').value}
+    saveData();alert('Akun '+t+' diperbarui!');
+    document.getElementById('set-admin-pass').value='';document.getElementById('set-spv-pass').value='';
+}
+
+/* ================================================================
+   NAVIGASI
+   ================================================================ */
+function showView(vid){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.getElementById(vid).classList.add('active');
+    if(event&&event.currentTarget&&event.currentTarget.classList.contains('nav-item')){event.currentTarget.classList.add('active');document.getElementById('view-title').innerText=event.currentTarget.innerText.trim()}
+    if(vid==='view1')loadTujuanDropdown();
+    if(vid==='view2')fillSelect('f2-select-order',getBase('BARU'),false);
+    if(vid==='view-muat'){filterMuatSelect();setTimeout(initSignaturePad,200)}
+    if(vid==='view-spp')filterSPPSelect();
+    if(vid==='view-po')filterPOSelect();
+    if(vid==='view3')filterReviseSelect();
+    if(vid==='dashboard'){populateDashboardFilters();renderMainTable();document.getElementById('fb-setup-banner').style.display=(!firebaseDB||syncStatus==='offline')?'flex':'none'}
+    if(vid==='view-master'){renderMasterTable();renderArmadaTable();renderBarangTable();renderBlacklistTable();loadTujuanDropdownTarif()}
+    if(vid==='view-settings')loadFBConfigUI();
+}
+
+/* ================================================================
+   SEARCH / FILTER FORM
+   ================================================================ */
+function getBase(sf){
+    if(sf==='BARU')return DB_ORDERS.filter(o=>!o.fleetData||!o.fleetData.length);
+    if(sf==='TERALOKASI')return DB_ORDERS.filter(o=>o.fleetData&&o.fleetData.length>0&&o.statusMuat!=='MUAT');
+    if(sf==='MUAT_SELESAI')return DB_ORDERS.filter(o=>o.statusMuat==='MUAT');
+    if(sf==='SPP_SELESAI')return DB_ORDERS.filter(o=>o.statusSPP==='SELESAI');
+    return[...DB_ORDERS];
+}
+function searchF(list,text,dv){
+    const t=(text||'').toLowerCase().trim();
+    if(t)list=list.filter(o=>{
+        const sj=o.fleetData?o.fleetData.map(f=>f.noSJ).filter(Boolean).join(' ').toLowerCase():'';
+        const np=o.fleetData?o.fleetData.map(f=>f.nopol).filter(Boolean).join(' ').toLowerCase():'';
+        return o.id.toLowerCase().includes(t)||o.tujuan.toLowerCase().includes(t)||sj.includes(t)||np.includes(t)||formatTanggal(o.tgl).includes(t)||(o.noSPP&&o.noSPP.toLowerCase().includes(t))||(o.noPO&&o.noPO.toLowerCase().includes(t));
+    });
+    if(dv)list=list.filter(o=>o.tgl===dv);
+    return list;
+}
+function fillSelect(sid,orders,keep){const sel=document.getElementById(sid);const cur=keep?sel.value:'';sel.innerHTML='<option value="">-- Pilih --</option>'+orders.map(o=>buildOrderOption(o)).join('');if(cur&&orders.find(o=>o.id===cur))sel.value=cur}
+function filterMuatSelect(){fillSelect('fmuat-select-order',searchF(getBase('TERALOKASI'),document.getElementById('fmuat-search').value,document.getElementById('fmuat-search-date').value),true);if(!document.getElementById('fmuat-select-order').value)document.getElementById('muat-details-container').style.display='none'}
+function filterSPPSelect(){fillSelect('fspp-select-order',searchF(getBase('MUAT_SELESAI'),document.getElementById('fspp-search').value,document.getElementById('fspp-search-date').value),true)}
+function filterPOSelect(){fillSelect('fpo-select-order',searchF(getBase('SPP_SELESAI'),document.getElementById('fpo-search').value,document.getElementById('fpo-search-date').value),false)}
+function filterReviseSelect(){fillSelect('f3-select-order',searchF(DB_ORDERS,document.getElementById('f3-search').value,document.getElementById('f3-search-date').value),true)}
+
+/* ================================================================
+   DASHBOARD TABLE
+   ================================================================ */
+function populateDashboardFilters(){const vs=[...new Set(MASTER_DATA.map(m=>m.vendor))],ts=[...new Set(MASTER_DATA.map(m=>m.tujuan))];const fv=document.getElementById('filter-vendor'),ft=document.getElementById('filter-tujuan'),cv=fv.value,ct=ft.value;fv.innerHTML='<option value="">Semua Vendor</option>'+vs.map(v=>'<option value="'+v+'">'+v+'</option>').join('');ft.innerHTML='<option value="">Semua Tujuan</option>'+ts.map(t=>'<option value="'+t+'">'+t+'</option>').join('');fv.value=cv;ft.value=ct}
+function renderMainTable(){
+    const tb=document.querySelector('#tableMain tbody');
+    const fM=document.getElementById('filter-mulai').value,fS=document.getElementById('filter-selesai').value,fV=document.getElementById('filter-vendor').value,fT=document.getElementById('filter-tujuan').value,fSt=document.getElementById('filter-status').value,fSP=document.getElementById('filter-status-spp').value,fSPP=document.getElementById('filter-spp').value.trim().toLowerCase(),fPO=document.getElementById('filter-po').value.trim().toLowerCase(),fFGW=document.getElementById('filter-fgw').value.trim().toLowerCase(),fNp=document.getElementById('filter-nopol').value.trim().toLowerCase(),fBl=document.getElementById('filter-bulan').value,fId=document.getElementById('filter-idorder').value.trim().toLowerCase();
+    let list=[...DB_ORDERS];
+    if(fM)list=list.filter(o=>o.tgl>=fM);if(fS)list=list.filter(o=>o.tgl<=fS);if(fV)list=list.filter(o=>o.vendor===fV);if(fT)list=list.filter(o=>o.tujuan===fT);if(fSt)list=list.filter(o=>o.statusMuat===fSt);if(fSP)list=list.filter(o=>o.statusSPP===fSP);if(fSPP)list=list.filter(o=>o.noSPP&&o.noSPP.toLowerCase().includes(fSPP));if(fPO)list=list.filter(o=>o.noPO&&o.noPO.toLowerCase().includes(fPO));if(fBl)list=list.filter(o=>o.tgl.substring(5,7)===fBl);if(fNp)list=list.filter(o=>o.fleetData&&o.fleetData.some(f=>f.nopol.toLowerCase().includes(fNp)));if(fFGW)list=list.filter(o=>o.fleetData&&o.fleetData.some(f=>f.noSJ&&f.noSJ.toLowerCase().includes(fFGW)));if(fId)list=list.filter(o=>o.id.toLowerCase().includes(fId));
+    list.sort((a,b)=>b.tgl.localeCompare(a.tgl));
+    if(!list.length){tb.innerHTML='<tr><td colspan="12" class="no-data-msg"><i class="fa-solid fa-inbox"></i>Belum ada data.</td></tr>';return}
+    tb.innerHTML=list.map((o,idx)=>{
+        let arm='<span style="color:var(--text-muted);font-size:10px">Belum dialokasi</span>';
+        if(o.fleetData&&o.fleetData.length)arm=o.fleetData.map((f,i)=>{
+            let it=f.items.map(x=>'<span style="display:block;font-size:10px;color:#22d3ee">'+x.barang+' ('+x.qtyBox+' Box, '+x.tonase.toLocaleString('id-ID')+' Kg)</span>').join('');
+            let t='<b style="color:#34d399">R'+(i+1)+'</b>: '+f.nopol+' <span style="color:var(--text-muted)">('+f.driver+')</span><br>'+it;
+            if(f.noSJ)t+='<button class="btn btn-primary btn-xs" onclick="tampilkanSuratJalanById(\''+o.id+'\','+i+')" style="margin-top:4px"><i class="fa-solid fa-file-pdf"></i> '+f.noSJ+'</button>';
+            return t;
+        }).join('<hr style="margin:8px 0;border-color:rgba(255,255,255,.05)">');
+        let st=o.statusMuat==='MUAT'?'<span class="badge badge-done">LOADED</span>':'<span class="badge badge-pending">WAITING</span>';
+        let po=o.noPO&&o.noPO!=='-'?'<span style="color:#22d3ee;font-size:10px">'+o.noPO+'</span>':'<span style="color:var(--text-muted)">-</span>';
+        let sc=o.statusSPP==='SELESAI'?'badge-done':o.statusSPP==='DIBUAT'?'badge-info':'badge-pending';
+        let spp='<span class="badge '+sc+'" style="font-size:8px">'+o.statusSPP+'</span>';if(o.noSPP&&o.noSPP!=='-')spp+='<br><span style="font-size:9px;color:#fbbf24">'+o.noSPP+'</span>';
+        let ket=o.ket?'<span style="font-size:10px">'+(o.ket.length>25?o.ket.substring(0,25)+'...':o.ket)+'</span>':'-';
+        return'<tr><td style="text-align:center;font-weight:600">'+(idx+1)+'</td><td><strong>'+formatTanggal(o.tgl)+'</strong></td><td style="font-family:monospace;font-size:10px;color:var(--text-muted)">'+o.id+'</td><td><strong>'+o.tujuan+'</strong></td><td>'+o.vendor+'</td><td style="text-align:center">'+o.qty+'</td><td style="min-width:170px">'+arm+'</td><td>'+st+'</td><td>'+po+'</td><td>'+spp+'</td><td>'+ket+'</td><td><button class="btn btn-danger btn-xs" onclick="triggerDeleteFromDashboard(\''+o.id+'\')" title="Hapus"><i class="fa-solid fa-trash-can"></i></button></td></tr>';
+    }).join('');
+}
+function resetFilter(){['filter-mulai','filter-selesai','filter-vendor','filter-tujuan','filter-status','filter-status-spp','filter-spp','filter-po','filter-fgw','filter-nopol','filter-bulan','filter-idorder'].forEach(id=>document.getElementById(id).value='');renderMainTable()}
+
+/* ================================================================
+   HAPUS ORDER
+   ================================================================ */
+function triggerDeleteFromDashboard(id){PENDING_DELETE_ID=id;document.getElementById('delete-order-id').innerText=id;document.getElementById('delete-confirm-pass').value='';document.getElementById('modal-delete-confirm').style.display='flex'}
+function executeDeleteOrder(){const id=PENDING_DELETE_ID;if(!id)return;if(document.getElementById('delete-confirm-pass').value!==appCreds[activeRoleKey].pass){alert('Password salah!');return}const i=DB_ORDERS.findIndex(o=>o.id===id);if(i<0){closeModal('modal-delete-confirm');return}DB_ORDERS.splice(i,1);saveData();closeModal('modal-delete-confirm');PENDING_DELETE_ID=null;renderMainTable();alert(id+' dihapus.')}
+function executeReviseDelete(){const oid=document.getElementById('f3-select-order').value;if(!oid)return alert('Pilih order!');if(document.getElementById('revise-delete-pass').value!==appCreds.SPV.pass)return alert('Sandi SPV salah!');if(!confirm('HAPUS PERMANEN '+oid+'?'))return;const i=DB_ORDERS.findIndex(o=>o.id===oid);if(i<0)return;DB_ORDERS.splice(i,1);saveData();document.getElementById('f3-search').value='';document.getElementById('f3-search-date').value='';document.getElementById('f3-select-order').value='';document.getElementById('revise-order-info').style.display='none';document.getElementById('revise-delete-zone').style.display='none';document.getElementById('spv-inputs-container').innerHTML='';filterReviseSelect();alert(oid+' dihapus permanen.')}
+
+/* ================================================================
+   EXPORT
+   ================================================================ */
+function eksporKeExcel(){let wb=XLSX.utils.table_to_book(document.getElementById('tableMain'),{sheet:"Orders"});XLSX.writeFile(wb,"LOG-House_Orders.xlsx")}
+function eksporKePDF(){const{jsPDF}=window.jspdf;const doc=new jsPDF('l','mm','a4');doc.text("LOG-House Corp. - Orders",14,15);doc.autoTable({html:'#tableMain',startY:20,styles:{fontSize:7},columnStyles:{11:{cellWidth:12}}});doc.save('LOG-House_Orders.pdf')}
+
+/* ================================================================
+   FORM 1: BOOKING
+   ================================================================ */
+function loadTujuanDropdown(){const t=[...new Set(MASTER_DATA.map(m=>m.tujuan))];document.getElementById('f1-tujuan').innerHTML='<option value="">-- Pilih --</option>'+t.map(x=>'<option value="'+x+'">'+x+'</option>').join('')}
+function loadTujuanDropdownTarif(){document.getElementById('mt-tujuan').innerHTML='<option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option>'+DB_TUJUAN.map(x=>'<option value="'+x.tujuan+'">'+x.tujuan+'</option>').join('')}
+function loadVendors(){const t=document.getElementById('f1-tujuan').value,vl=MASTER_DATA.filter(m=>m.tujuan===t),c=document.getElementById('f1-vendor-list');c.innerHTML=vl.map((v,i)=>'<label class="radio-box" onclick="selectRadioBox(this)"><input type="radio" name="f1-vendor-select" value="'+v.vendor+'|'+v.harga+'|'+v.ppn+'" '+(i===0?'checked':'')+'><strong>'+v.vendor+'</strong><small style="color:#34d399">Rp '+v.harga.toLocaleString('id-ID')+' (+'+v.ppn+'%)</small></label>').join('');if(c.firstElementChild)c.firstElementChild.classList.add('selected')}
+function selectRadioBox(el){document.querySelectorAll('.radio-box').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');el.querySelector('input').checked=true}
+document.getElementById('form1').addEventListener('submit',function(e){e.preventDefault();const sv=document.querySelector('input[name="f1-vendor-select"]:checked');if(!sv)return alert('Pilih Vendor!');const[v,h,p]=sv.value.split('|');const tv=document.getElementById('f1-tujuan').value;DB_ORDERS.push({id:'TRX-'+Date.now().toString().slice(-6),tujuan:tv,alamat:getAlamatTujuan(tv),tgl:document.getElementById('f1-tgl').value,qty:parseInt(document.getElementById('f1-qty').value),vendor:v,harga:parseInt(h),ppn:parseFloat(p),ket:document.getElementById('f1-ket').value,fleetData:[],statusMuat:'BELUM',noPO:'-',statusSPP:'PENDING',noSPP:'-'});saveData();alert('Manifest Dibuat!');this.reset();document.getElementById('f1-vendor-list').innerHTML='';showView('dashboard')});
+
+/* ================================================================
+   FORM 2: ALOKASI
+   ================================================================ */
+function prepareFleetForm(){const oid=document.getElementById('f2-select-order').value;if(!oid){document.getElementById('f2-qty-actual').value=1;generateFleetInputs();return}const o=DB_ORDERS.find(x=>x.id===oid);if(o){document.getElementById('f2-qty-actual').value=o.qty;generateFleetInputs()}}
+function generateFleetInputs(){const oid=document.getElementById('f2-select-order').value,c=document.getElementById('fleet-inputs-container'),btn=document.getElementById('f2-submit');if(!oid){c.innerHTML='';btn.disabled=true;return}const aq=parseInt(document.getElementById('f2-qty-actual').value)||1;let opt='<option value="">-- Pilih --</option>'+DB_ARMADA.map(a=>'<option value="'+a.nopol+'" data-driver="'+a.driver+'" data-hp="'+a.hp+'">'+a.driver+' ['+a.nopol+']</option>').join('');let html='<p style="font-size:12px;margin-bottom:15px">Rit Aktual: <strong style="color:#34d399">'+aq+'</strong></p>';for(let i=1;i<=aq;i++)html+='<div class="fleet-input-set"><span class="fleet-title">Rit '+i+'</span><div class="form-group"><label>Master</label><select onchange="autoFillFleet(this,'+i+')" style="border-color:#34d399">'+opt+'</select></div><div class="form-grid"><div class="form-group"><label>Nopol</label><input type="text" id="f2-nopol-'+i+'" required></div><div class="form-group"><label>Driver</label><input type="text" id="f2-driver-'+i+'" required></div><div class="form-group"><label>HP</label><input type="text" id="f2-hp-'+i+'" required></div></div></div>';c.innerHTML=html;btn.disabled=false}
+function autoFillFleet(sel,i){const o=sel.options[sel.selectedIndex];if(!o.value)return;document.getElementById('f2-nopol-'+i).value=o.value;document.getElementById('f2-driver-'+i).value=o.dataset.driver;document.getElementById('f2-hp-'+i).value=o.dataset.hp}
+document.getElementById('form2').addEventListener('submit',function(e){e.preventDefault();const oid=document.getElementById('f2-select-order').value,oi=DB_ORDERS.findIndex(o=>o.id===oid);if(oi<0)return;const aq=parseInt(document.getElementById('f2-qty-actual').value)||1;DB_ORDERS[oi].qty=aq;const arm=[];for(let i=1;i<=aq;i++){const np=document.getElementById('f2-nopol-'+i).value.toUpperCase(),dr=document.getElementById('f2-driver-'+i).value,hp=document.getElementById('f2-hp-'+i).value;arm.push({nopol:np,driver:dr,hp:hp,items:[],noSJ:'',tglSJ:'',spvSign:''});if(!DB_ARMADA.find(a=>a.nopol===np))DB_ARMADA.push({driver:dr,nopol:np,hp:hp})}const viol=scanBL(arm);if(viol.length){PENDING_BYPASS_TYPE='form2';PENDING_BYPASS_DATA={idx:oi,fleets:arm};triggerBLModal(viol)}else{DB_ORDERS[oi].fleetData=arm;saveData();alert('Alokasi sukses!');showView('dashboard')}});
+
+/* ================================================================
+   BLACKLIST
+   ================================================================ */
+function scanBL(fleets){let v=[];fleets.forEach((f,idx)=>{const cn=f.nopol.replace(/\s+/g,'').toUpperCase(),cd=f.driver.trim().toLowerCase();DB_BLACKLIST.filter(b=>b.tipe==='NOPOL').forEach(b=>{if(cn===b.value.replace(/\s+/g,'').toUpperCase())v.push({unit:idx+1,tipe:'NOPOL',value:f.nopol,alasan:b.alasan})});DB_BLACKLIST.filter(b=>b.tipe==='SOPIR').forEach(b=>{if(cd.includes(b.value.trim().toLowerCase()))v.push({unit:idx+1,tipe:'SOPIR',value:f.driver,alasan:b.alasan})})});return v}
+function triggerBLModal(v){document.getElementById('blacklist-violations-list').innerHTML=v.map(x=>'<div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);padding:10px;border-radius:8px;margin-bottom:8px"><p style="color:#f87171;font-weight:700;font-size:11px">Rit '+x.unit+': '+x.tipe+' - '+x.value+'</p><p style="font-size:10px;color:var(--text-muted)">'+x.alasan+'</p></div>').join('');document.getElementById('blacklist-bypass-reason').value='';document.getElementById('modal-blacklist-confirm').style.display='flex'}
+function executeBypassSubmission(){const r=document.getElementById('blacklist-bypass-reason').value.trim();if(!r)return alert('Alasan wajib!');const p=PENDING_BYPASS_DATA;DB_ORDERS[p.idx].fleetData=p.fleets;DB_ORDERS[p.idx].ket+=(DB_ORDERS[p.idx].ket?' | ':'')+'\u26a0\ufe0f[DISPENSASI: '+r+']';if(PENDING_BYPASS_TYPE==='form3')DB_ORDERS[p.idx].ket+=' [REVISI: '+p.alasanSPV+']';saveData();closeModal('modal-blacklist-confirm');alert('Dispensasi berhasil.');showView('dashboard')}
+
+/* ================================================================
+   FORM MUAT
+   ================================================================ */
+function loadMuatDetails(){const oid=document.getElementById('fmuat-select-order').value,c=document.getElementById('muat-details-container');if(!oid){c.style.display='none';return}const o=DB_ORDERS.find(x=>x.id===oid);if(!o){c.style.display='none';return}document.getElementById('muat-tujuan').innerText=o.tujuan;document.getElementById('muat-vendor').innerText=o.vendor;document.getElementById('muat-qty').innerText=o.qty;document.getElementById('muat-nosj-suggest').innerText=generateNextSJ();let html=o.fleetData.map((f,i)=>'<div style="border:1px solid var(--card-border);padding:16px;border-radius:12px;margin-bottom:12px;background:rgba(0,0,0,.2)"><p style="margin-bottom:10px;color:#22d3ee;font-weight:bold;font-size:11px"><i class="fa fa-truck"></i> Rit '+(i+1)+': '+f.nopol+' ('+f.driver+')</p><div class="form-group" style="margin-bottom:10px"><label>No. Surat Jalan</label><input type="text" id="fmuat-nosj-'+i+'" value="'+generateNextSJ()+'" required style="border-color:#0ea5e9"></div><label>Barang:</label><div id="fmuat-items-'+i+'"></div><button type="button" class="btn btn-primary btn-xs" onclick="addMuatItemRow('+i+')" style="margin-top:5px"><i class="fa fa-plus"></i> Tambah</button></div>').join('');document.getElementById('dynamic-muat-inputs').innerHTML=html;o.fleetData.forEach((f,i)=>addMuatItemRow(i));c.style.display='block';setTimeout(initSignaturePad,300)}
+function addMuatItemRow(ri,data){const c=document.getElementById('fmuat-items-'+ri);if(!c)return;const opt='<option value="">- Pilih -</option>'+DB_BARANG.map(b=>'<option value="'+b.nama+'" data-kode="'+b.kode+'" data-satuan="'+b.satuan+'" data-berat="'+b.beratPerUnit+'" '+(data&&data.barang===b.nama?'selected':'')+'>'+b.nama+' ('+b.kode+')</option>').join('');c.insertAdjacentHTML('beforeend','<div class="item-row"><div class="form-group"><label>Barang</label><select class="muat-sel-barang" onchange="autoTonase(this)">'+opt+'</select></div><div class="form-group"><label>QTY</label><input type="number" class="muat-inp-qty" value="'+(data?data.qtyBox:'')+'" oninput="autoTonase(this)" placeholder="0"></div><div class="form-group"><label>Tonase</label><input type="number" class="muat-inp-tonase" value="'+(data?data.tonase:'')+'" readonly style="background:rgba(34,211,238,.05)"></div><button type="button" class="btn btn-danger btn-xs" onclick="this.parentElement.remove()" style="align-self:center"><i class="fa fa-times"></i></button></div>')}
+function autoTonase(el){const r=el.closest('.item-row'),s=r.querySelector('select'),q=parseInt(r.querySelector('.muat-inp-qty').value)||0,b=parseFloat(s.options[s.selectedIndex]?.dataset?.berat)||30;r.querySelector('.muat-inp-tonase').value=q*b}
+
+let sigCanvas,sigCtx,sigDrawing=false;
+function initSignaturePad(){sigCanvas=document.getElementById('sig-canvas');if(!sigCanvas)return;sigCtx=sigCanvas.getContext('2d');const r=sigCanvas.getBoundingClientRect();if(!r.width)return;sigCanvas.width=r.width;sigCanvas.height=r.height;sigCtx.lineWidth=2;sigCtx.lineCap='round';sigCtx.strokeStyle='#000';clearSignature();if(!sigCanvas.dataset.bound){sigCanvas.addEventListener('mousedown',sS);sigCanvas.addEventListener('mousemove',sM);sigCanvas.addEventListener('mouseup',sE);sigCanvas.addEventListener('mouseleave',sE);sigCanvas.addEventListener('touchstart',sS,{passive:false});sigCanvas.addEventListener('touchmove',sM,{passive:false});sigCanvas.addEventListener('touchend',sE);sigCanvas.dataset.bound='true'}}
+function sP(e){const r=sigCanvas.getBoundingClientRect(),cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY;return{x:cx-r.left,y:cy-r.top}}
+const sS=e=>{sigDrawing=true;const p=sP(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);e.preventDefault()};
+const sM=e=>{if(!sigDrawing)return;const p=sP(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();e.preventDefault()};
+const sE=()=>{sigDrawing=false};
+function clearSignature(){if(sigCtx&&sigCanvas){sigCtx.fillStyle='#fff';sigCtx.fillRect(0,0,sigCanvas.width,sigCanvas.height)}}
+
+document.getElementById('formConfirmMuat').addEventListener('submit',function(e){e.preventDefault();const oid=document.getElementById('fmuat-select-order').value,idx=DB_ORDERS.findIndex(o=>o.id===oid);if(idx<0)return;if(document.getElementById('fmuat-spv-password').value!==appCreds.SPV.pass)return alert('Sandi SPV salah!');const today=new Date().toISOString().split('T')[0],signData=sigCanvas.toDataURL('image/png');for(let i=0;i<DB_ORDERS[idx].fleetData.length;i++){const noSJ=document.getElementById('fmuat-nosj-'+i).value.trim();if(!noSJ)return alert('Rit '+(i+1)+': No SJ wajib!');if(DB_ORDERS.some(o=>o.fleetData.some(f=>f.noSJ===noSJ)))return alert('No SJ '+noSJ+' sudah dipakai!');const rows=document.querySelectorAll('#fmuat-items-'+i+' .item-row');if(!rows.length)return alert('Rit '+(i+1)+': Belum ada barang!');let items=[];rows.forEach(row=>{const sel=row.querySelector('select'),opt=sel.options[sel.selectedIndex];items.push({barang:sel.value,kodeBarang:opt?.dataset?.kode||'',satuan:opt?.dataset?.satuan||'BOX',beratPerUnit:parseFloat(opt?.dataset?.berat)||30,qtyBox:parseInt(row.querySelector('.muat-inp-qty').value)||0,tonase:parseInt(row.querySelector('.muat-inp-tonase').value)||0})});DB_ORDERS[idx].fleetData[i].items=items;DB_ORDERS[idx].fleetData[i].noSJ=noSJ;DB_ORDERS[idx].fleetData[i].tglSJ=today;DB_ORDERS[idx].fleetData[i].spvSign=signData}DB_ORDERS[idx].statusMuat='MUAT';saveData();clearSignature();alert('Surat Jalan diterbitkan!');this.reset();document.getElementById('muat-details-container').style.display='none';document.getElementById('fmuat-search').value='';document.getElementById('fmuat-search-date').value='';filterMuatSelect();renderMainTable()});
+
+/* ================================================================
+   SURAT JALAN
+   ================================================================ */
+let currentPrintedOrder=null;
+function tampilkanSuratJalan(o,ri){currentPrintedOrder=o;const f=o.fleetData[ri],al=o.alamat||getAlamatTujuan(o.tujuan);let rows='',tq=0,tk=0;f.items.forEach((it,i)=>{tq+=it.qtyBox;tk+=it.tonase;rows+='<tr><td class="center">'+(i+1)+'</td><td>'+(it.kodeBarang||'-')+'</td><td>'+it.barang+' (1 X '+(it.beratPerUnit||30)+' KG)</td><td class="center">'+(it.satuan||'BOX')+'</td><td class="center"><strong>'+(it.qtyBox>0?it.qtyBox.toLocaleString('id-ID'):'-')+'</strong></td><td class="center">'+(it.tonase>0?it.tonase.toLocaleString('id-ID'):'-')+'</td></tr>'});document.getElementById('sj-print-area').innerHTML='<table class="sj-header-table"><tr><td class="sj-header-left"><h1>PT. Santos Jaya Abadi</h1><p>Jl. Raya Panjunan KM. 3 Sukodono Sidoarjo 61258</p><p>Telp: +62-31-7882359 Fax: +62-31-7882360</p></td><td class="sj-header-right"><h2>SURAT JALAN</h2><h3>ANTAR GUDANG</h3><div class="sj-date">'+formatTanggalSJ(f.tglSJ||o.tgl)+'</div></td></tr></table><div class="sj-line"></div><table class="sj-info-table"><tr><td class="label">No. SJ</td><td>: '+f.noSJ+'</td><td class="label">Ekspedisi</td><td>: '+o.vendor+'</td></tr><tr><td class="label">Tujuan</td><td>: <strong>'+o.tujuan+'</strong></td><td class="label">Nopol</td><td>: <strong>'+f.nopol+'</strong></td></tr><tr><td class="label">Alamat</td><td>: '+al+'</td><td class="label">Sopir</td><td>: '+f.driver+'</td></tr></table><table class="sj-table"><thead><tr><th style="width:5%">NO</th><th style="width:25%">KODE</th><th style="width:35%">NAMA BARANG</th><th style="width:10%">SAT</th><th style="width:12%">QTY</th><th style="width:13%">TONASE</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td colspan="4" style="text-align:right;padding-right:10px">TOTAL</td><td class="center"><strong>'+tq.toLocaleString('id-ID')+'</strong></td><td class="center"><strong>'+tk.toLocaleString('id-ID')+'</strong></td></tr></tfoot></table><div class="sj-nb">NB : Kekurangan/kerusakan barang dalam perjalanan adalah tanggung jawab ekspedisi.</div><table class="sj-signatures"><tr><td><div class="sj-sign-title">Pengirim</div><div style="height:30px;display:flex;justify-content:center;align-items:flex-end;margin-bottom:2px">'+(f.spvSign?'<img src="'+f.spvSign+'" style="max-height:28px" alt="TTD">':'')+'</div><div class="sj-sign-line">(___________________)</div></td><td><div class="sj-sign-title">Sopir</div><div class="sj-sign-line">( '+f.driver+' )</div></td><td><div class="sj-sign-title">Penerima</div><div class="sj-sign-line">(___________________)</div></td><td><div class="sj-sign-title">Security</div><div class="sj-sign-line">(___________________)</div></td><td><div class="sj-sign-title">PJ Gudang</div><div class="sj-sign-line">(___________________)</div></td></tr></table>';document.getElementById('modal-sj').style.display='flex'}
+function tampilkanSuratJalanById(id,ri){const o=DB_ORDERS.find(x=>x.id===id);if(o)tampilkanSuratJalan(o,ri)}
+function cetakSuratJalan(){window.print()}
+function simpanSuratJalanPDF(){html2pdf().set({margin:[6,6,6,6],filename:'SJ_'+(currentPrintedOrder.fleetData[0]?.noSJ||'Draft')+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(document.getElementById('sj-print-area')).save()}
+function closeModal(id){document.getElementById(id).style.display='none'}
+
+/* ================================================================
+   FORM SPP & PO
+   ================================================================ */
+document.getElementById('formSPP').addEventListener('submit',function(e){e.preventDefault();const id=document.getElementById('fspp-select-order').value,idx=DB_ORDERS.findIndex(o=>o.id===id);if(idx<0)return;DB_ORDERS[idx].statusSPP=document.getElementById('fspp-status').value;DB_ORDERS[idx].noSPP=document.getElementById('fspp-no').value;saveData();alert('SPP diperbarui! Status: '+DB_ORDERS[idx].statusSPP);this.reset();document.getElementById('fspp-search').value='';document.getElementById('fspp-search-date').value='';filterSPPSelect();renderMainTable()});
+document.getElementById('formPO').addEventListener('submit',function(e){e.preventDefault();const id=document.getElementById('fpo-select-order').value,idx=DB_ORDERS.findIndex(o=>o.id===id);if(idx<0)return;DB_ORDERS[idx].noPO=document.getElementById('fpo-no').value;saveData();alert('PO ditautkan!');this.reset();document.getElementById('fpo-search').value='';document.getElementById('fpo-search-date').value='';filterPOSelect();renderMainTable()});
+
+/* ================================================================
+   FORM REVISE
+   ================================================================ */
+function onReviseOrderSelected(){const oid=document.getElementById('f3-select-order').value,info=document.getElementById('revise-order-info'),delZone=document.getElementById('revise-delete-zone');if(!oid){info.style.display='none';delZone.style.display='none';document.getElementById('spv-inputs-container').innerHTML='';return}const o=DB_ORDERS.find(x=>x.id===oid);if(!o){info.style.display='none';delZone.style.display='none';return}document.getElementById('rev-info-id').innerText=o.id;document.getElementById('rev-info-tujuan').innerText=o.tujuan;document.getElementById('rev-info-vendor').innerText=o.vendor;document.getElementById('rev-info-tgl').innerText=formatTanggal(o.tgl);info.style.display='block';document.getElementById('revise-delete-id').innerText=o.id;document.getElementById('revise-delete-pass').value='';delZone.style.display='block';generateSpvInputs()}
+function generateSpvInputs(){const oid=document.getElementById('f3-select-order').value,o=DB_ORDERS.find(x=>x.id===oid),c=document.getElementById('spv-inputs-container');if(!o){c.innerHTML='';return}let opt='<option value="">-- Ganti --</option>'+DB_ARMADA.map(a=>'<option value="'+a.nopol+'" data-driver="'+a.driver+'" data-hp="'+a.hp+'">'+a.driver+' ['+a.nopol+']</option>').join('');let html='';if(o.fleetData&&o.fleetData.length)o.fleetData.forEach((f,i)=>{let itH='';f.items.forEach((it,idx)=>{itH+=buildRevItem(i,idx,it)});html+='<div class="fleet-input-set" style="border-color:#fbbf24" id="revise-rit-'+i+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="fleet-title" style="color:#fbbf24;margin:0">Revisi Rit '+(i+1)+'</span><button type="button" class="btn btn-danger btn-xs" onclick="this.closest(\'.fleet-input-set\').remove()"><i class="fa fa-trash"></i> Hapus Rit</button></div><div class="form-group" style="margin-bottom:10px"><label>Ganti Kendaraan</label><select onchange="autoFillFleetSpv(this,'+i+')">'+opt+'</select></div><div class="form-grid"><div class="form-group"><label>Nopol</label><input type="text" id="f3-nopol-'+i+'" value="'+f.nopol+'" required></div><div class="form-group"><label>Driver</label><input type="text" id="f3-driver-'+i+'" value="'+f.driver+'" required></div><div class="form-group"><label>HP</label><input type="text" id="f3-hp-'+i+'" value="'+f.hp+'" required></div></div><div class="form-group"><label>No SJ</label><input type="text" id="f3-nosj-'+i+'" value="'+(f.noSJ||'')+'"></div><label>Barang:</label><div id="f3-items-'+i+'">'+itH+'</div><button type="button" class="btn btn-primary btn-xs" onclick="addRevItem('+i+')" style="margin-top:5px"><i class="fa fa-plus"></i> Tambah</button></div>'});else html+='<p style="color:var(--text-muted);font-size:11px">Belum ada data armada.</p>';c.innerHTML=html}
+function buildRevItem(ri,ii,data){const opt='<option value="">- Pilih -</option>'+DB_BARANG.map(b=>'<option value="'+b.nama+'" data-kode="'+b.kode+'" data-satuan="'+b.satuan+'" data-berat="'+b.beratPerUnit+'" '+(data&&data.barang===b.nama?'selected':'')+'>'+b.nama+' ('+b.kode+')</option>').join('');return'<div class="item-row" style="margin-bottom:5px;border-bottom:1px dashed var(--card-border);padding-bottom:5px"><div class="form-group" style="margin:0"><select class="f3-sel-barang" onchange="autoTonase(this)">'+opt+'</select></div><div class="form-group" style="margin:0"><input type="number" class="f3-inp-qty" value="'+(data?data.qtyBox:'')+'" oninput="autoTonase(this)" placeholder="QTY"></div><div class="form-group" style="margin:0"><input type="number" class="f3-inp-tonase" value="'+(data?data.tonase:'')+'" readonly style="background:rgba(34,211,238,.05)"></div><button type="button" class="btn btn-danger btn-xs" onclick="this.parentElement.remove()" style="align-self:center"><i class="fa fa-times"></i></button></div>'}
+function addRevItem(ri){const c=document.getElementById('f3-items-'+ri);if(c)c.insertAdjacentHTML('beforeend',buildRevItem(ri,Date.now()))}
+function autoFillFleetSpv(sel,i){const o=sel.options[sel.selectedIndex];if(!o.value)return;document.getElementById('f3-nopol-'+i).value=o.value;document.getElementById('f3-driver-'+i).value=o.dataset.driver;document.getElementById('f3-hp-'+i).value=o.dataset.hp}
+document.getElementById('form3').addEventListener('submit',function(e){e.preventDefault();const id=document.getElementById('f3-select-order').value,idx=DB_ORDERS.findIndex(o=>o.id===id);if(idx<0)return;if(document.getElementById('f3-spv-pass').value!==appCreds.SPV.pass)return alert('Sandi SPV salah!');const alasan=document.getElementById('f3-alasan').value;let nfd=[];document.querySelectorAll('[id^="revise-rit-"]').forEach(block=>{const i=block.id.split('-')[2];nfd.push({nopol:block.querySelector('#f3-nopol-'+i)?.value?.toUpperCase()||'',driver:block.querySelector('#f3-driver-'+i)?.value||'',hp:block.querySelector('#f3-hp-'+i)?.value||'',noSJ:block.querySelector('#f3-nosj-'+i)?.value||'',items:Array.from(block.querySelectorAll('.item-row')).map(row=>{const sel=row.querySelector('select'),opt=sel?.options[sel.selectedIndex];return{barang:sel?.value||'',kodeBarang:opt?.dataset?.kode||'',satuan:opt?.dataset?.satuan||'BOX',beratPerUnit:parseFloat(opt?.dataset?.berat)||30,qtyBox:parseInt(row.querySelector('.f3-inp-qty')?.value)||0,tonase:parseInt(row.querySelector('.f3-inp-tonase')?.value)||0}}),tglSJ:DB_ORDERS[idx].fleetData[i]?.tglSJ||'',spvSign:DB_ORDERS[idx].fleetData[i]?.spvSign||''})});const viol=scanBL(nfd);if(viol.length){PENDING_BYPASS_TYPE='form3';PENDING_BYPASS_DATA={idx:idx,fleets:nfd,alasanSPV:alasan};triggerBLModal(viol)}else{DB_ORDERS[idx].fleetData=nfd;DB_ORDERS[idx].qty=nfd.length;DB_ORDERS[idx].ket+=(DB_ORDERS[idx].ket?' | ':'')+'[REVISI: '+alasan+']';saveData();alert('Revisi berhasil!');showView('dashboard')}});
+
+/* ================================================================
+   MASTER DATA: TARIF
+   ================================================================ */
+function handleAddTujuanChange(){const v=document.getElementById('mt-tujuan').value;if(v==='NEW'){document.getElementById('add-tujuan-select-wrap').style.display='none';document.getElementById('add-tujuan-input-wrap').style.display='block';document.getElementById('mt-alamat').value=''}else{document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none';document.getElementById('mt-alamat').value=getAlamatTujuan(v)}}
+function cancelAddNewTujuan(){document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none';document.getElementById('mt-tujuan').value='';document.getElementById('mt-alamat').value=''}
+document.getElementById('form-add-tarif').addEventListener('submit',function(e){e.preventDefault();let tuj=document.getElementById('mt-tujuan').value;const alm=document.getElementById('mt-alamat').value.trim(),ven=document.getElementById('mt-vendor').value.trim().toUpperCase(),har=parseFloat(document.getElementById('mt-harga').value),ppn=parseFloat(document.getElementById('mt-ppn').value);if(tuj==='NEW'||!tuj){tuj=document.getElementById('mt-new-tujuan').value.trim().toUpperCase();if(!tuj)return alert('Nama tujuan wajib!');const ti=DB_TUJUAN.findIndex(x=>x.tujuan===tuj);if(ti>=0)DB_TUJUAN[ti].alamat=alm;else DB_TUJUAN.push({tujuan:tuj,alamat:alm})}else{const ti=DB_TUJUAN.findIndex(x=>x.tujuan===tuj);if(ti>=0)DB_TUJUAN[ti].alamat=alm}const i=MASTER_DATA.findIndex(m=>m.tujuan===tuj&&m.vendor===ven);if(i>=0){MASTER_DATA[i].harga=har;MASTER_DATA[i].ppn=ppn}else MASTER_DATA.push({tujuan:tuj,vendor:ven,harga:har,ppn:ppn});saveData();alert('Disimpan!');this.reset();cancelAddNewTujuan();renderMasterTable();loadTujuanDropdownTarif();loadTujuanDropdown()});
+function renderMasterTable(){document.querySelector('#tableMasterTarif tbody').innerHTML=MASTER_DATA.map((m,i)=>'<tr><td><b>'+m.tujuan+'</b></td><td style="font-size:10px">'+getAlamatTujuan(m.tujuan)+'</td><td style="color:#22d3ee;font-weight:600">'+m.vendor+'</td><td>Rp '+m.harga.toLocaleString('id-ID')+'</td><td>'+m.ppn+'%</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditTarif('+i+')" style="margin-right:3px"><i class="fa fa-edit"></i></button><button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){MASTER_DATA.splice('+i+',1);saveData();renderMasterTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}
+function bukaEditTarif(i){const m=MASTER_DATA[i];document.getElementById('edit-tarif-idx').value=i;document.getElementById('et-tujuan-old').value=m.tujuan;document.getElementById('et-tujuan').value=m.tujuan;document.getElementById('et-alamat').value=getAlamatTujuan(m.tujuan);document.getElementById('et-vendor').value=m.vendor;document.getElementById('et-harga').value=m.harga;document.getElementById('et-ppn').value=m.ppn;document.getElementById('modal-edit-tarif').style.display='flex'}
+document.getElementById('form-edit-tarif-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-tarif-idx').value),old=document.getElementById('et-tujuan-old').value,nw=document.getElementById('et-tujuan').value.trim().toUpperCase(),na=document.getElementById('et-alamat').value.trim();if(!nw)return alert('Tujuan kosong!');const ti=DB_TUJUAN.findIndex(t=>t.tujuan===old);if(ti>=0){DB_TUJUAN[ti].tujuan=nw;DB_TUJUAN[ti].alamat=na}else DB_TUJUAN.push({tujuan:nw,alamat:na});if(old!==nw){MASTER_DATA.forEach(m=>{if(m.tujuan===old)m.tujuan=nw});DB_ORDERS.forEach(o=>{if(o.tujuan===old){o.tujuan=nw;o.alamat=na}})}MASTER_DATA[i].tujuan=nw;MASTER_DATA[i].vendor=document.getElementById('et-vendor').value.trim().toUpperCase();MASTER_DATA[i].harga=parseFloat(document.getElementById('et-harga').value);MASTER_DATA[i].ppn=parseFloat(document.getElementById('et-ppn').value);saveData();closeModal('modal-edit-tarif');alert('Diperbarui!');renderMasterTable();loadTujuanDropdownTarif();loadTujuanDropdown()});
+
+/* ================================================================
+   MASTER DATA: ARMADA
+   ================================================================ */
+document.getElementById('form-add-armada').addEventListener('submit',function(e){e.preventDefault();const np=document.getElementById('ma-nopol').value.trim().toUpperCase(),dr=document.getElementById('ma-driver').value.trim(),hp=document.getElementById('ma-hp').value.trim();const i=DB_ARMADA.findIndex(a=>a.nopol===np);if(i>=0){DB_ARMADA[i].driver=dr;DB_ARMADA[i].hp=hp}else DB_ARMADA.push({driver:dr,nopol:np,hp:hp});saveData();alert('Disimpan!');this.reset();renderArmadaTable()});
+function renderArmadaTable(){document.querySelector('#tableArmada tbody').innerHTML=DB_ARMADA.map((a,i)=>'<tr><td><b>'+a.driver+'</b></td><td style="color:#34d399;font-weight:600">'+a.nopol+'</td><td>'+a.hp+'</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditArmada('+i+')" style="margin-right:3px"><i class="fa fa-edit"></i></button><button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){DB_ARMADA.splice('+i+',1);saveData();renderArmadaTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}
+function bukaEditArmada(i){const a=DB_ARMADA[i];document.getElementById('edit-armada-idx').value=i;document.getElementById('ea-driver').value=a.driver;document.getElementById('ea-nopol').value=a.nopol;document.getElementById('ea-hp').value=a.hp;document.getElementById('modal-edit-armada').style.display='flex'}
+document.getElementById('form-edit-armada-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-armada-idx').value);DB_ARMADA[i].driver=document.getElementById('ea-driver').value.trim();DB_ARMADA[i].nopol=document.getElementById('ea-nopol').value.trim().toUpperCase();DB_ARMADA[i].hp=document.getElementById('ea-hp').value.trim();saveData();closeModal('modal-edit-armada');alert('Diperbarui!');renderArmadaTable()});
+
+/* ================================================================
+   MASTER DATA: BARANG
+   ================================================================ */
+document.getElementById('form-add-barang').addEventListener('submit',function(e){e.preventDefault();const nm=document.getElementById('mbg-nama').value.trim(),kd=document.getElementById('mbg-kode').value.trim(),st=document.getElementById('mbg-satuan').value.trim()||'BOX',br=parseFloat(document.getElementById('mbg-berat').value)||30;if(DB_BARANG.findIndex(b=>b.nama.toUpperCase()===nm.toUpperCase())>=0)return alert('Sudah ada!');DB_BARANG.push({nama:nm,kode:kd,satuan:st,beratPerUnit:br});saveData();alert('Ditambahkan!');this.reset();renderBarangTable()});
+function renderBarangTable(){document.querySelector('#tableBarang tbody').innerHTML=DB_BARANG.map((b,i)=>'<tr><td><b>'+b.nama+'</b></td><td style="font-family:monospace;font-size:10px;color:#22d3ee">'+(b.kode||'-')+'</td><td>'+(b.satuan||'BOX')+'</td><td>'+(b.beratPerUnit||30)+' Kg</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditBarang('+i+')" style="margin-right:3px"><i class="fa fa-edit"></i></button><button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){DB_BARANG.splice('+i+',1);saveData();renderBarangTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}
+function bukaEditBarang(i){const b=DB_BARANG[i];document.getElementById('edit-barang-idx').value=i;document.getElementById('ebg-nama').value=b.nama;document.getElementById('ebg-kode').value=b.kode||'';document.getElementById('ebg-satuan').value=b.satuan||'BOX';document.getElementById('ebg-berat').value=b.beratPerUnit||30;document.getElementById('modal-edit-barang').style.display='flex'}
+document.getElementById('form-edit-barang-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-barang-idx').value);DB_BARANG[i].nama=document.getElementById('ebg-nama').value.trim();DB_BARANG[i].kode=document.getElementById('ebg-kode').value.trim();DB_BARANG[i].satuan=document.getElementById('ebg-satuan').value.trim();DB_BARANG[i].beratPerUnit=parseFloat(document.getElementById('ebg-berat').value)||30;saveData();closeModal('modal-edit-barang');alert('Diperbarui!');renderBarangTable()});
+
+/* ================================================================
+   MASTER DATA: BLACKLIST
+   ================================================================ */
+document.getElementById('form-add-blacklist').addEventListener('submit',function(e){e.preventDefault();DB_BLACKLIST.push({tipe:document.getElementById('mb-tipe').value,value:document.getElementById('mb-value').value.trim(),alasan:document.getElementById('mb-alasan').value.trim()});saveData();alert('Ditambahkan!');this.reset();renderBlacklistTable()});
+function renderBlacklistTable(){document.querySelector('#tableBlacklist tbody').innerHTML=DB_BLACKLIST.map((b,i)=>'<tr><td><span class="badge badge-danger">'+b.tipe+'</span></td><td style="color:#f87171;font-weight:700">'+b.value+'</td><td>'+b.alasan+'</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditBL('+i+')" style="margin-right:3px"><i class="fa fa-edit"></i></button><button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){DB_BLACKLIST.splice('+i+',1);saveData();renderBlacklistTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}
+function bukaEditBL(i){const b=DB_BLACKLIST[i];document.getElementById('edit-blacklist-idx').value=i;document.getElementById('eb-tipe').value=b.tipe;document.getElementById('eb-value').value=b.value;document.getElementById('eb-alasan').value=b.alasan;document.getElementById('modal-edit-blacklist').style.display='flex'}
+document.getElementById('form-edit-blacklist-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-blacklist-idx').value);DB_BLACKLIST[i].tipe=document.getElementById('eb-tipe').value;DB_BLACKLIST[i].value=document.getElementById('eb-value').value.trim();DB_BLACKLIST[i].alasan=document.getElementById('eb-alasan').value.trim();saveData();closeModal('modal-edit-blacklist');alert('Diperbarui!');renderBlacklistTable()});
+
+/* ================================================================
+   INIT
+   ================================================================ */
+saveLocal();
+initFirebase();
+</script>
+</body>
+</html>
