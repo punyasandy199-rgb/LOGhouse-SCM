@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-    <!-- Library untuk Camera QR/Barcode Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         :root{--bg-dark:#070a12;--sidebar-bg:#0f1420;--card-bg:rgba(255,255,255,.03);--card-border:rgba(255,255,255,.07);--text-main:#f8fafc;--text-muted:#94a3b8;--gradient-primary:linear-gradient(135deg,#22d3ee 0%,#0ea5e9 50%,#4338ca 100%);--gradient-success:linear-gradient(135deg,#34d399 0%,#059669 100%);--gradient-warning:linear-gradient(135deg,#fbbf24 0%,#d97706 100%);--gradient-danger:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%);--accent-glow:rgba(34,211,238,.15)}
@@ -97,9 +96,11 @@
         .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
         .modal-header h3{font-size:1.3rem;color:#22d3ee}.modal-close{cursor:pointer;color:var(--text-muted);font-size:1.5rem;transition:.2s}.modal-close:hover{color:#f87171}
 
-        /* Camera Scanner Custom CSS */
         .scanner-zone{display:none; margin-top:15px; border-radius:12px; overflow:hidden; border:2px solid var(--card-border); background:#000;}
         .scanner-zone video{width:100%; border-radius:10px;}
+
+        @media(max-width:900px){nav{width:220px}main{margin-left:220px}.settings-grid{grid-template-columns:1fr}}
+        @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}main{margin-left:60px}}
     </style>
 </head>
 <body>
@@ -153,37 +154,20 @@
             <div class="flex-row">
                 <div style="flex:0 0 400px">
                     <div class="card"><h2>Scan & Input Inbound</h2>
-                        
                         <div class="form-group">
                             <label>1. Scan QR Code Rak</label>
-                            <div class="flex-row items-center">
-                                <input type="text" id="inQrRack" class="qr-input" placeholder="Scan QR atau Ketik..." style="flex:1">
-                                <button class="btn btn-primary btn-sm" onclick="toggleScanner('inQrRackScanner', 'camInQr', 'inQrRack', 'QR_CODE')"><i class="fa fa-camera"></i></button>
-                            </div>
+                            <div class="flex-row items-center"><input type="text" id="inQrRack" class="qr-input" placeholder="Scan QR atau Ketik..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('inQrRackScanner', 'camInQr', 'inQrRack', 'QR_CODE')"><i class="fa fa-camera"></i></button></div>
                             <div id="camInQr" class="scanner-zone"></div>
                         </div>
-
                         <div class="form-group">
                             <label>2. Scan Barcode Produk</label>
-                            <div class="flex-row items-center">
-                                <input type="text" id="inBarcode" class="scan-input" placeholder="Scan Barcode atau Ketik..." style="flex:1">
-                                <button class="btn btn-primary btn-sm" onclick="toggleScanner('inBarcodeScanner', 'camInBc', 'inBarcode', 'BARCODE')"><i class="fa fa-camera"></i></button>
-                            </div>
+                            <div class="flex-row items-center"><input type="text" id="inBarcode" class="scan-input" placeholder="Scan Barcode..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('inBarcodeScanner', 'camInBc', 'inBarcode', 'BARCODE')"><i class="fa fa-camera"></i></button></div>
                             <div id="camInBc" class="scanner-zone"></div>
                             <div id="inParsedInfo" class="text-primary fw-bold mb-2" style="font-size:11px"></div>
                         </div>
-
                         <div class="form-group"><label>3. Info Produk & Status</label><select id="inProduct" class="mb-1"></select><select id="inStatus"></select></div>
-                        <div class="form-group">
-                            <label>4. Lokasi Penyimpanan</label>
-                            <input type="text" id="inRack" list="rackList" class="search-input mb-1" placeholder="Ketik Rak (Misal: A)..." autocomplete="off"><datalist id="rackList"></datalist>
-                            <input type="text" id="inSlot" list="slotList" class="search-input" placeholder="Ketik Slot (Misal: 1a)..." autocomplete="off"><datalist id="slotList"></datalist>
-                            <small class="text-muted" style="font-size:10px; display:block">Kosongkan slot untuk auto-assign ke slot kosong pertama.</small>
-                        </div>
-                        <div class="form-group">
-                            <label>5. Nomor Pallet (Range)</label>
-                            <div class="flex-row items-center"><input type="number" id="inPalletStart" placeholder="Dari (XX)" min="1" value="1"><span class="text-muted fw-bold" style="font-size:18px">-</span><input type="number" id="inPalletEnd" placeholder="Sampai (YY)" min="1" value="1"></div>
-                        </div>
+                        <div class="form-group"><label>4. Lokasi Penyimpanan</label><input type="text" id="inRack" list="rackList" class="search-input mb-1" placeholder="Ketik Rak (Misal: A)..." autocomplete="off"><datalist id="rackList"></datalist><input type="text" id="inSlot" list="slotList" class="search-input" placeholder="Ketik Slot (Misal: 1a)..." autocomplete="off"><datalist id="slotList"></datalist><small class="text-muted" style="font-size:10px; display:block">Kosongkan slot untuk auto-assign.</small></div>
+                        <div class="form-group"><label>5. Nomor Pallet (Range)</label><div class="flex-row items-center"><input type="number" id="inPalletStart" placeholder="Dari" min="1" value="1"><span class="text-muted fw-bold" style="font-size:18px">-</span><input type="number" id="inPalletEnd" placeholder="Sampai" min="1" value="1"></div></div>
                         <button class="btn btn-primary w-full mt-2" onclick="submitInbound()"><i class="fa fa-check-circle"></i> SUBMIT PLOTTING</button>
                     </div>
                 </div>
@@ -196,15 +180,20 @@
                 <div style="flex:0 0 400px">
                     <div class="card"><h2>Outbound Scan</h2>
                         <div class="form-group">
-                            <label>1. Scan Barcode Keluar</label>
-                            <div class="flex-row items-center">
-                                <input type="text" id="outBarcode" class="scan-input" placeholder="Scan Barcode..." style="flex:1">
-                                <button class="btn btn-primary btn-sm" onclick="toggleScanner('outBarcodeScanner', 'camOutBc', 'outBarcode', 'BARCODE')"><i class="fa fa-camera"></i></button>
-                            </div>
+                            <label>1. Scan Barcode Barang</label>
+                            <div class="flex-row items-center"><input type="text" id="outBarcode" class="scan-input" placeholder="Scan Barcode..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('outBarcodeScanner', 'camOutBc', 'outBarcode', 'BARCODE')"><i class="fa fa-camera"></i></button></div>
                             <div id="camOutBc" class="scanner-zone"></div>
                         </div>
                         <div id="outItemInfo" class="mb-2"></div>
-                        <div class="form-group d-none" id="outVerifyCard"><label>2. Verifikasi Rak</label><input type="text" id="outVerifyRack" list="outRackList" class="search-input mb-1" placeholder="Scan/Ketik Rak..." autocomplete="off"><datalist id="outRackList"></datalist><div id="outVerifyResult" class="text-muted fw-bold mb-2" style="font-size:11px"></div><button class="btn btn-danger w-full d-none" id="btnOutbound" onclick="submitOutbound()"><i class="fa fa-truck-loading"></i> KONFIRMASI KELUAR</button></div>
+                        <div class="form-group d-none" id="outVerifyCard">
+                            <label>2. Scan Lokasi Rak.Slot (Misal: A.1a)</label>
+                            <div class="flex-row items-center">
+                                <input type="text" id="outVerifyRackSlot" class="qr-input" placeholder="Scan QR Rak.Slot..." style="flex:1">
+                                <button class="btn btn-primary btn-sm" onclick="toggleScanner('outVerifyScanner', 'camOutVerify', 'outVerifyRackSlot', 'QR_CODE')"><i class="fa fa-camera"></i></button>
+                            </div>
+                            <div id="camOutVerify" class="scanner-zone"></div>
+                            <div id="outVerifyResult" class="text-muted fw-bold mb-2" style="font-size:11px"></div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex-1"><div class="card"><h2>Info Pengeluaran</h2><div id="outInfoPanel" class="text-center text-muted" style="padding:40px 0"><i class="fa fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div></div></div>
@@ -218,7 +207,6 @@
         <div id="wms-firebase" class="view">
             <div class="card fb-config-zone">
                 <h2><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Konfigurasi Cloud</h2>
-                <p class="text-muted mb-2">Hubungkan aplikasi WMS ke Firebase Realtime Database untuk sinkronisasi.</p>
                 <div class="form-group"><label>Database URL</label><input type="text" id="fb-url" placeholder="https://xxx-default-rtdb..."></div>
                 <div class="form-grid"><div class="form-group"><label>API Key</label><input type="text" id="fb-api" placeholder="AIzaSy..."></div><div class="form-group"><label>Project ID</label><input type="text" id="fb-project" placeholder="nama-project"></div></div>
                 <div class="form-group"><label>App ID</label><input type="text" id="fb-appid" placeholder="1:12345:web:abcde"></div>
@@ -231,7 +219,7 @@
             </div>
         </div>
 
-        <div id="wms-settings" class="view"><div class="card"><h2><i class="fa-solid fa-users-gear text-warning"></i> Manajemen Akun</h2><div class="settings-grid"><div class="settings-card"><h3><i class="fa fa-user-plus"></i> Tambah User</h3><form id="form-add-user"><div class="form-group"><label>Role</label><select id="usr-role"><option value="OPERATOR">Operator</option><option value="SPV">Supervisor</option></select></div><div class="form-group"><label>Username</label><input type="text" id="usr-name" required></div><div class="form-group"><label>Password</label><input type="text" id="usr-pass" required></div><button type="submit" class="btn btn-warning w-full" style="color:#fff">Simpan</button></form></div><div class="settings-card"><h3><i class="fa fa-list-check"></i> Daftar User</h3><div id="user-list-container"></div></div></div></div></div>
+        <div id="wms-settings" class="view"><div class="card"><h2><i class="fa-solid fa-users-gear text-warning"></i> Manajemen Akun</h2><div class="settings-grid"><div class="settings-card"><h3 id="userFormTitle"><i class="fa fa-user-plus"></i> Tambah User</h3><form id="form-add-user"><input type="hidden" id="editUserKey"><div class="form-group"><label>Role</label><select id="usr-role"><option value="OPERATOR">Operator</option><option value="SPV">Supervisor</option></select></div><div class="form-group"><label>Username</label><input type="text" id="usr-name" required></div><div class="form-group"><label>Password</label><input type="text" id="usr-pass" required></div><button type="submit" class="btn btn-warning w-full" style="color:#fff"><i class="fa fa-save"></i> Simpan</button></form></div><div class="settings-card"><h3><i class="fa fa-list-check"></i> Daftar User</h3><div id="user-list-container"></div></div></div></div></div>
     </main>
 </div>
 
@@ -259,23 +247,21 @@
     const getRacks = () => JSON.parse(localStorage.getItem('wms_racks')); const saveRacks = (r) => localStorage.setItem('wms_racks', JSON.stringify(r));
     const getDb = () => JSON.parse(localStorage.getItem('wms_db')); const saveDb = (db) => localStorage.setItem('wms_db', JSON.stringify(db));
 
-    let currentOutboundData = null;
+    let currentOutboundData = null, isProcessingOutbound = false;
 
     function initWMS() { document.getElementById('user-badge-wms').innerHTML=`<i class="fa fa-user"></i> ${currentUser.username.toUpperCase()} (${currentUser.role})`; document.querySelectorAll('#sidebar-wms .spv-only').forEach(el=>el.style.display=currentUser.role==='SPV'?'flex':'none'); populateDropdowns(); loadCloudConfig(); showView('wms-dashboard', document.querySelector('#sidebar-wms .nav-item')); }
     function showView(viewId, el) { stopAllScanners(); document.querySelectorAll('#main-wms .view').forEach(v=>v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); document.querySelectorAll('#sidebar-wms .nav-item').forEach(n=>n.classList.remove('active')); if(el)el.classList.add('active'); if(viewId==='wms-dashboard')renderDashboard();if(viewId==='wms-inbound'){clearInboundForm();renderInboundVisual();}if(viewId==='wms-outbound')resetOutboundForm();if(viewId==='wms-rack')renderRackTable();if(viewId==='wms-product')renderProductTable();if(viewId==='wms-status')renderStatusTable();if(viewId==='wms-settings')renderUserList(); }
     function showModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function populateDropdowns() { let racks=getRacks().map(r=>r.id),rH='';racks.forEach(r=>rH+=`<option value="Rak ${r}">`);document.getElementById('rackList').innerHTML=rH;document.getElementById('outRackList').innerHTML=rH; let prods=getProducts(),pH='<option value="">-- Pilih --</option>';prods.forEach(p=>pH+=`<option value="${p.id}">${p.id} - ${p.name}</option>`);document.getElementById('inProduct').innerHTML=pH; let stats=getStatuses(),sH='';stats.forEach(s=>sH+=`<option value="${s}">${s}</option>`);document.getElementById('inStatus').innerHTML=sH; updateSlotDatalist(''); }
+    function populateDropdowns() { let racks=getRacks().map(r=>r.id),rH='';racks.forEach(r=>rH+=`<option value="Rak ${r}">`);document.getElementById('rackList').innerHTML=rH; let prods=getProducts(),pH='<option value="">-- Pilih --</option>';prods.forEach(p=>pH+=`<option value="${p.id}">${p.id} - ${p.name}</option>`);document.getElementById('inProduct').innerHTML=pH; let stats=getStatuses(),sH='';stats.forEach(s=>sH+=`<option value="${s}">${s}</option>`);document.getElementById('inStatus').innerHTML=sH; updateSlotDatalist(''); }
     function updateSlotDatalist(rackId) { let racks=getRacks(),rack=racks.find(r=>r.id===rackId),sH='';if(rack){rack.slots.forEach(s=>sH+=`<option value="${rackId}.${s}">`)}else{racks.forEach(r=>r.slots.forEach(s=>sH+=`<option value="${r.id}.${s}">`))}document.getElementById('slotList').innerHTML=sH; }
     
-    // Scanner Handlers (Physical & Camera)
+    // Inbound Listeners
     document.getElementById('inQrRack').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); handleQrRackScan(this.value); this.value=''; }});
     document.getElementById('inRack').addEventListener('input', function() { let val=this.value.replace('Rak ','').toUpperCase(); let rid=getRacks().map(r=>r.id).includes(val)?val:''; updateSlotDatalist(rid); renderInboundVisual(); });
     function parseBarcode(code) { if(!code||code.length<7) return null; try { return { type:code.charAt(0)==='P'?'Produksi':'Unknown', tower:code.charAt(1)==='A'?'Tower 1':'Tower 2', batch:code.substring(2,5) }; } catch(e) { return null; } }
     document.getElementById('inBarcode').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); handleBarcodeScan(this.value); }});
-    
     function handleQrRackScan(rawScan) { rawScan=rawScan.trim().toUpperCase().replace(/RAK[\s\-]*/i,'').trim(); if(getRacks().map(r=>r.id).includes(rawScan)){document.getElementById('inRack').value="Rak "+rawScan; updateSlotDatalist(rawScan); renderInboundVisual(); document.getElementById('inBarcode').focus();}else{alert("Rak tidak ditemukan!");}}
-    function handleBarcodeScan(code) { let p=parseBarcode(code); document.getElementById('inParsedInfo').innerHTML = p ? `<i class="fa fa-check-circle text-success"></i> Tipe: <b>${p.type}</b> | Batch: <b>${p.batch}</b>` : "<span class='text-danger'>Format salah</span>"; }
-    
+    function handleBarcodeScan(code) { let p=parseBarcode(code); document.getElementById('inParsedInfo').innerHTML = p ? `<i class="fa fa-check-circle text-success"></i> Tipe: <b>${p.type}</b> | Batch: <b>${p.batch}</b>` : "<span class='text-danger'>Format barcode salah</span>"; }
     function clearInboundForm() { document.getElementById('inQrRack').value=''; document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inRack').value=''; document.getElementById('inSlot').value=''; document.getElementById('inPalletStart').value=1; document.getElementById('inPalletEnd').value=1; updateSlotDatalist(''); }
     
     function renderInboundVisual() {
@@ -302,6 +288,7 @@
         document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inPalletStart').value=1; document.getElementById('inPalletEnd').value=1; renderInboundVisual(); renderDashboard();
     }
 
+    // Outbound Logic
     function renderDashboard() {
         let db=getDb(), racks=getRacks(), tP=0, tSU=0, fS=0, mH='<div class="flex-row" style="flex-wrap:wrap">';
         racks.forEach(ro=>{ let r=ro.id, rT=0, iRF=true, sH=''; if(!db[r])db[r]={}; let gs={}; ro.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O';if(!gs[rn])gs[rn]=[];gs[rn].push(s);});
@@ -310,92 +297,161 @@
         mH+='</div>'; saveDb(db); document.getElementById('dash-rack-map').innerHTML=mH; let tA=(racks.reduce((a,r)=>a+r.slots.length,0))-fS;
         document.getElementById('dash-total-pallet').innerText=tP; document.getElementById('dash-slot-used').innerText=tSU; document.getElementById('dash-slot-full').innerText=fS; document.getElementById('dash-slot-avail').innerText=tA;
     }
-
     function showSlotDetail(rackId, slotId) { let db=getDb(), items=db[rackId]?db[rackId][slotId]||[]:[]; document.getElementById('slotDetailTitle').innerText=`Isi Slot: Rak ${rackId} - ${slotId}`; if(items.length===0){document.getElementById('slotDetailBody').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-box-open fa-3x mb-3"></i><br>Slot ini kosong.</div>';}else{let lH='';items.forEach(i=>{let sc=i.status==='OK'?'badge-success':(i.status==='HOLD'?'badge-warning':'badge-danger');lH+=`<div class="user-card" style="display:flex;justify-content:space-between;align-items:center"><div><strong class="text-primary">${i.productName}</strong><br><small>Pallet: <b>${i.pallet}</b></small></div><span class="badge ${sc}">${i.status}</span></div>`;});document.getElementById('slotDetailBody').innerHTML=lH;} showModal('slotDetailModal'); }
 
-    function resetOutboundForm() { document.getElementById('outBarcode').value=''; document.getElementById('outItemInfo').innerHTML=''; document.getElementById('outVerifyCard').classList.add('d-none'); document.getElementById('btnOutbound').classList.add('d-none'); document.getElementById('outVerifyRack').value=''; currentOutboundData=null; document.getElementById('outInfoPanel').innerHTML='<div class="text-muted text-center" style="padding:40px 0"><i class="fas fa-box-open fa-3x mb-2"></i><br>Scan barcode</div>'; }
+    function resetOutboundForm() { isProcessingOutbound=false; document.getElementById('outBarcode').value=''; document.getElementById('outItemInfo').innerHTML=''; document.getElementById('outVerifyCard').classList.add('d-none'); document.getElementById('outVerifyRackSlot').value=''; document.getElementById('outVerifyResult').innerHTML=''; currentOutboundData=null; document.getElementById('outInfoPanel').innerHTML='<div class="text-muted text-center" style="padding:40px 0"><i class="fas fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div>'; }
     document.getElementById('outBarcode').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); processOutboundScan(this.value); }});
     
     function processOutboundScan(bc) {
+        if(isProcessingOutbound) return;
         let db=getDb(), f=null; 
         for(let ro of getRacks()){let r=ro.id;if(!db[r])continue;for(let s in db[r]){for(let i=0;i<db[r][s].length;i++){if(db[r][s][i].barcode===bc){f={rack:r,slot:s,index:i,data:db[r][s][i]};break;}}if(f)break;}if(f)break;}
-        if(f){currentOutboundData=f;document.getElementById('outItemInfo').innerHTML=`<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Rak: <b>${f.rack}</b> | Slot: <b>${f.slot}</b><br>Pallet No: <b>${f.data.pallet}</b></div>`;document.getElementById('outVerifyCard').classList.remove('d-none');document.getElementById('outInfoPanel').innerHTML=`<h4 class="text-danger">Rak ${f.rack} - ${f.slot}</h4><p>${f.data.productName}</p>`;}else{alert("❌ Barang tidak ditemukan!");resetOutboundForm();}
+        if(f){
+            currentOutboundData=f; isProcessingOutbound=true;
+            document.getElementById('outItemInfo').innerHTML=`<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Produk: <b>${f.data.productName}</b> | Pallet: <b>${f.data.pallet}</b></div>`;
+            document.getElementById('outVerifyCard').classList.remove('d-none');
+            document.getElementById('outInfoPanel').innerHTML=`<h4 class="text-warning">Lokasi: <b>${f.rack}.${f.slot}</b></h4><p>Silakan scan/scan QR lokasi Rak.Slot yang persis sama untuk konfirmasi.</p>`;
+            document.getElementById('outVerifyRackSlot').value='';
+            document.getElementById('outVerifyRackSlot').focus();
+        }else{alert("❌ Barang tidak ditemukan!");resetOutboundForm();}
     }
-    document.getElementById('outVerifyRack').addEventListener('input', function() { if(!currentOutboundData)return; let v=this.value.replace('Rak ','').toUpperCase(), btn=document.getElementById('btnOutbound'), res=document.getElementById('outVerifyResult'); if(v===currentOutboundData.rack){res.innerHTML="<span class='text-success'><i class='fa fa-check-circle'></i> Cocok!</span>";btn.classList.remove('d-none');}else{res.innerHTML=`<span class='text-danger'>Harus Rak ${currentOutboundData.rack}</span>`;btn.classList.add('d-none');} });
-    function submitOutbound() { if(!currentOutboundData)return; let v=document.getElementById('outVerifyRack').value.replace('Rak ','').toUpperCase(); if(v!==currentOutboundData.rack){alert("Gagal! Rak tidak sesuai.");return;} let db=getDb(); db[currentOutboundData.rack][currentOutboundData.slot].splice(currentOutboundData.index,1); if(db[currentOutboundData.rack][currentOutboundData.slot].length===0)delete db[currentOutboundData.rack][currentOutboundData.slot]; saveDb(db); syncToCloud(); alert("✅ Outbound berhasil!"); resetOutboundForm(); renderDashboard(); }
 
+    // Verification logic for Outbound (must match exact Rak.Slot)
+    document.getElementById('outVerifyRackSlot').addEventListener('input', function() { 
+        if(!currentOutboundData || !isProcessingOutbound) return; 
+        let val = this.value.trim().toUpperCase();
+        let expected = currentOutboundData.rack + '.' + currentOutboundData.slot.toUpperCase();
+        
+        if(val === expected) {
+            // Auto-submit on exact match
+            submitOutbound();
+        } else {
+            document.getElementById('outVerifyResult').innerHTML = `<span class='text-danger'>Lokasi tidak cocok! Harus: <b>${expected}</b></span>`;
+        }
+    });
+
+    function submitOutbound() { 
+        if(!currentOutboundData) return; 
+        let db=getDb(); 
+        db[currentOutboundData.rack][currentOutboundData.slot].splice(currentOutboundData.index,1); 
+        if(db[currentOutboundData.rack][currentOutboundData.slot].length===0) delete db[currentOutboundData.rack][currentOutboundData.slot]; 
+        saveDb(db); syncToCloud(); alert("✅ Outbound berhasil!"); resetOutboundForm(); renderDashboard(); 
+    }
+
+    // Master Data CRUD
     function renderRackTable(){let r=getRacks(),h='';r.forEach(x=>h+=`<tr><td><strong>${x.id}</strong></td><td>${x.product}</td><td>${x.slots.length}</td><td><button class="btn btn-warning btn-xs" onclick="editRack('${x.id}')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteRack('${x.id}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('rackTableBody').innerHTML=h||'<tr><td colspan="4" class="text-center text-muted">Tidak ada data</td></tr>';}
     function editRack(id){let r=getRacks().find(x=>x.id===id);if(r){document.getElementById('editOldRackId').value=r.id;document.getElementById('mRackId').value=r.id;document.getElementById('mRackProduct').value=r.product;document.getElementById('mRackSlots').value=r.slots.join(', ');showModal('rackModal');}}
     function saveRack(){let id=document.getElementById('mRackId').value.toUpperCase(),prod=document.getElementById('mRackProduct').value,ss=document.getElementById('mRackSlots').value,oid=document.getElementById('editOldRackId').value;if(!id||!ss)return;let slots=ss.split(',').map(s=>s.trim().toLowerCase()),racks=getRacks();if(oid){let i=racks.findIndex(r=>r.id===oid);if(i!==-1)racks[i]={id,product:prod,slots};}else{if(racks.find(r=>r.id===id)){alert('Sudah ada!');return;}racks.push({id,product:prod,slots});let db=getDb();db[id]={};saveDb(db);}saveRacks(racks);closeModal('rackModal');renderRackTable();populateDropdowns();syncToCloud();}
     function deleteRack(id){if(!confirm(`Hapus Rak ${id}?`))return;saveRacks(getRacks().filter(r=>r.id!==id));let db=getDb();delete db[id];saveDb(db);renderRackTable();populateDropdowns();syncToCloud();}
+
     function renderProductTable(){let p=getProducts(),h='';p.forEach(x=>h+=`<tr><td><strong>${x.id}</strong></td><td>${x.name}</td><td>${x.unit||'-'}</td><td>${x.weight||'-'}</td><td><button class="btn btn-warning btn-xs" onclick="editProduct('${x.id}')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteProduct('${x.id}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('productTableBody').innerHTML=h||'<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>';}
     function editProduct(id){let p=getProducts().find(x=>x.id===id);if(p){document.getElementById('editOldProdId').value=p.id;document.getElementById('mProdId').value=p.id;document.getElementById('mProdName').value=p.name;document.getElementById('mProdUnit').value=p.unit;document.getElementById('mProdWeight').value=p.weight;showModal('productModal');}}
     function saveProduct(){let id=document.getElementById('mProdId').value,n=document.getElementById('mProdName').value,u=document.getElementById('mProdUnit').value,w=document.getElementById('mProdWeight').value,oid=document.getElementById('editOldProdId').value;if(!id||!n)return;let ps=getProducts();if(oid){let i=ps.findIndex(p=>p.id===oid);if(i!==-1)ps[i]={id,name:n,unit:u,weight:w};}else{if(ps.find(p=>p.id===id)){alert('Sudah ada!');return;}ps.push({id,name:n,unit:u,weight:w});}saveProducts(ps);closeModal('productModal');renderProductTable();populateDropdowns();syncToCloud();}
     function deleteProduct(id){if(!confirm(`Hapus ${id}?`))return;saveProducts(getProducts().filter(p=>p.id!==id));renderProductTable();populateDropdowns();syncToCloud();}
+
     function renderStatusTable(){let s=getStatuses(),h='';s.forEach(x=>h+=`<tr><td><strong>${x}</strong></td><td><button class="btn btn-danger btn-xs" onclick="deleteStatus('${x}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('statusTableBody').innerHTML=h||'<tr><td colspan="2" class="text-center text-muted">Tidak ada data</td></tr>';}
     function saveStatus(){let n=document.getElementById('mStatusName').value,o=document.getElementById('editOldStatus').value;if(!n)return;let ss=getStatuses();if(o){let i=ss.indexOf(o);if(i!==-1)ss[i]=n;}else{if(ss.includes(n)){alert('Sudah ada!');return;}ss.push(n);}saveStatuses(ss);closeModal('statusModal');renderStatusTable();populateDropdowns();document.getElementById('mStatusName').value='';syncToCloud();}
     function deleteStatus(s){if(!confirm(`Hapus ${s}?`))return;saveStatuses(getStatuses().filter(x=>x!==s));renderStatusTable();populateDropdowns();syncToCloud();}
-    function renderUserList(){let u=getUsers(),h='';for(let x in u){let r=u[x].role,b=r==='SPV'?'badge-warning':'badge-success';h+=`<div class="user-card"><div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:14px">${x}</strong><span class="badge ${b}">${r}</span></div></div>`;}document.getElementById('user-list-container').innerHTML=h;}
-    document.getElementById('form-add-user').addEventListener('submit', function(e){ e.preventDefault(); let r=document.getElementById('usr-role').value,n=document.getElementById('usr-name').value.trim().toLowerCase(),p=document.getElementById('usr-pass').value; if(!n||!p){alert("Isi data!");return;} let u=getUsers(); if(u[n]){alert("Sudah ada!");return;} u[n]={password:p,role:r};saveUsers(u);renderUserList();document.getElementById('usr-name').value='';document.getElementById('usr-pass').value='';alert("User ditambahkan!"); });
+
+    // User Management Logic
+    let isEditingUser = false;
+    function renderUserList(){
+        let users=getUsers(), h='';
+        for(let u in users) {
+            let r=users[u].role, b=r==='SPV'?'badge-warning':'badge-success';
+            h+=`<div class="user-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                    <div><strong style="font-size:16px">${u}</strong> <span class="badge ${b}">${r}</span></div>
+                </div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-warning btn-xs" onclick="editUser('${u}')"><i class="fa fa-edit"></i> Edit</button>
+                    <button class="btn btn-danger btn-xs" onclick="deleteUser('${u}')"><i class="fa fa-trash"></i> Hapus</button>
+                </div>
+            </div>`;
+        }
+        document.getElementById('user-list-container').innerHTML = h;
+    }
+
+    function editUser(username) {
+        let users = getUsers();
+        if(users[username]) {
+            isEditingUser = true;
+            document.getElementById('editUserKey').value = username;
+            document.getElementById('usr-name').value = username;
+            document.getElementById('usr-name').readOnly = true; // Lock username key
+            document.getElementById('usr-pass').value = users[username].password;
+            document.getElementById('usr-role').value = users[username].role;
+            document.getElementById('userFormTitle').innerHTML = '<i class="fa fa-user-edit"></i> Edit User: ' + username;
+        }
+    }
+
+    function deleteUser(username) {
+        if(!confirm(`Hapus user ${username}?`)) return;
+        let users = getUsers();
+        delete users[username];
+        saveUsers(users);
+        syncToCloud();
+        renderUserList();
+    }
+
+    document.getElementById('form-add-user').addEventListener('submit', function(e){ 
+        e.preventDefault(); 
+        let r = document.getElementById('usr-role').value;
+        let n = document.getElementById('usr-name').value.trim().toLowerCase();
+        let p = document.getElementById('usr-pass').value;
+
+        if(!n || !p) { alert("Isi username & password!"); return; }
+        let users = getUsers();
+
+        if(isEditingUser) {
+            let key = document.getElementById('editUserKey').value;
+            users[key] = { password: p, role: r };
+            isEditingUser = false;
+            document.getElementById('usr-name').readOnly = false;
+            document.getElementById('userFormTitle').innerHTML = '<i class="fa fa-user-plus"></i> Tambah User';
+        } else {
+            if(users[n]) { alert("Username sudah ada!"); return; }
+            users[n] = { password: p, role: r };
+        }
+        
+        saveUsers(users);
+        syncToCloud();
+        renderUserList();
+        document.getElementById('usr-name').value = '';
+        document.getElementById('usr-pass').value = '';
+        alert("Data user berhasil disimpan!");
+    });
 
     // ======================= CAMERA QR/BARCODE LOGIC =======================
     const activeScanners = {};
-
     function toggleScanner(scannerKey, elementId, targetInputId, type) {
-        if (activeScanners[scannerKey] && activeScanners[scannerKey].isScanning) {
-            stopScanner(scannerKey, elementId);
-        } else {
-            startScanner(scannerKey, elementId, targetInputId, type);
-        }
+        if (activeScanners[scannerKey] && activeScanners[scannerKey].isScanning) { stopScanner(scannerKey, elementId); } 
+        else { startScanner(scannerKey, elementId, targetInputId, type); }
     }
-
     function startScanner(scannerKey, elementId, targetInputId, type) {
-        const camEl = document.getElementById(elementId);
-        camEl.style.display = 'block';
-
+        const camEl = document.getElementById(elementId); camEl.style.display = 'block';
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-        const formats = type === 'QR_CODE' ? [Html5QrcodeSupportedFormats.QR_CODE] : 
-                        [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.CODE_39];
-
+        const formats = type === 'QR_CODE' ? [Html5QrcodeSupportedFormats.QR_CODE] : [Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.EAN_13];
         const scanner = new Html5Qrcode(elementId, { formatsToSupport: formats });
         activeScanners[scannerKey] = scanner;
 
-        scanner.start(
-            { facingMode: "environment" }, 
-            config,
+        scanner.start({ facingMode: "environment" }, config,
             (decodedText) => {
-                // On Success
                 document.getElementById(targetInputId).value = decodedText;
-                
-                // Trigger specific logic based on input
+                // Trigger change/input event manually
+                let event = new Event('input');
+                document.getElementById(targetInputId).dispatchEvent(event);
+                // Or specific triggers
                 if (targetInputId === 'inQrRack') handleQrRackScan(decodedText);
                 if (targetInputId === 'inBarcode') handleBarcodeScan(decodedText);
                 if (targetInputId === 'outBarcode') processOutboundScan(decodedText);
-
-                stopScanner(scannerKey, elementId); // Stop after 1 successful read
+                stopScanner(scannerKey, elementId);
             },
-            (errorMessage) => { /* Ignore scan failure */ }
-        ).catch(err => {
-            alert("Gagal mengakses kamera. Pastikan izin kamera diaktifkan di browser.\nError: " + err);
-            camEl.style.display = 'none';
-        });
+            (errorMessage) => {}
+        ).catch(err => { alert("Gagal akses kamera. Cek izin browser.\nError: " + err); camEl.style.display = 'none'; });
     }
-
-    function stopScanner(scannerKey, elementId) {
-        if (activeScanners[scannerKey]) {
-            activeScanners[scannerKey].stop().then(() => {
-                document.getElementById(elementId).style.display = 'none';
-                delete activeScanners[scannerKey];
-            }).catch(err => console.error(err));
-        }
-    }
-
-    function stopAllScanners() {
-        Object.keys(activeScanners).forEach(key => {
-            let elId = key === 'inQrRackScanner' ? 'camInQr' : (key === 'inBarcodeScanner' ? 'camInBc' : 'camOutBc');
-            stopScanner(key, elId);
-        });
-    }
+    function stopScanner(scannerKey, elementId) { if (activeScanners[scannerKey]) { activeScanners[scannerKey].stop().then(() => { document.getElementById(elementId).style.display = 'none'; delete activeScanners[scannerKey]; }).catch(err => {}); } }
+    function stopAllScanners() { Object.keys(activeScanners).forEach(key => { let elId = key.includes('Qr') ? 'camInQr' : (key.includes('inB') ? 'camInBc' : (key.includes('Verify') ? 'camOutVerify' : 'camOutBc')); stopScanner(key, elId); }); }
 
     // ======================= FIREBASE CLOUD LOGIC =======================
     let fbAppWms = null, fbDbRef = null;
@@ -403,10 +459,27 @@
     function setBadge(c, t) { let b=document.getElementById('wms-sync-badge'); b.className='badge '+c; b.innerHTML=`<i class="fa fa-${c==='badge-success'?'cloud':'database'}"></i> ${t}`; }
     function loadCloudConfig() { let c=JSON.parse(localStorage.getItem('fb_config_wms')); if(c&&c.url){document.getElementById('fb-url').value=c.url;document.getElementById('fb-api').value=c.api;document.getElementById('fb-project').value=c.project;document.getElementById('fb-appid').value=c.appid||'';simpanHubungkan(true);} }
     function simpanHubungkan(auto=false) { let url=document.getElementById('fb-url').value,api=document.getElementById('fb-api').value,proj=document.getElementById('fb-project').value,appid=document.getElementById('fb-appid').value; if(!url||!api||!proj){if(!auto)alert("Harap lengkapi URL, API Key, dan Project ID!");return;} localStorage.setItem('fb_config_wms',JSON.stringify({url,api,project:proj,appid})); if(!auto)logFB("Menyimpan konfigurasi...",'warn'); try{if(fbAppWms){fbAppWms.delete().then(()=>{initFbApp(url,api,proj,appid,auto);});}else{initFbApp(url,api,proj,appid,auto);}}catch(e){logFB("Gagal: "+e.message,'err');setBadge('badge-danger','Error');} }
-    function initFbApp(url, api, proj, appid, auto) { fbAppWms=firebase.initializeApp({apiKey:api,authDomain:proj+".firebaseapp.com",databaseURL:url,projectId:proj,appId:appid},'wms-app'); fbDbRef=fbAppWms.database().ref('wms_data'); fbDbRef.on('value',(snapshot)=>{let data=snapshot.val();if(data){if(data.db)localStorage.setItem('wms_db',JSON.stringify(data.db));if(data.racks)localStorage.setItem('wms_racks',JSON.stringify(data.racks));if(data.products)localStorage.setItem('wms_products',JSON.stringify(data.products));if(data.statuses)localStorage.setItem('wms_statuses',JSON.stringify(data.statuses));renderDashboard();populateDropdowns();}setBadge('badge-success','Cloud Aktif');if(!auto)logFB("✅ Koneksi berhasil & Data tersinkronisasi!",'ok');},(error)=>{logFB("❌ Gagal read: "+error.message,'err');setBadge('badge-danger','Cloud Error');}); if(!auto)logFB("Menghubungkan ke Firebase...",'info'); }
+    function initFbApp(url, api, proj, appid, auto) { 
+        fbAppWms=firebase.initializeApp({apiKey:api,authDomain:proj+".firebaseapp.com",databaseURL:url,projectId:proj,appId:appid},'wms-app-'+Date.now()); 
+        fbDbRef=fbAppWms.database().ref('wms_data'); 
+        fbDbRef.on('value',(snapshot)=>{
+            let data=snapshot.val();
+            if(data){
+                if(data.db) localStorage.setItem('wms_db',JSON.stringify(data.db));
+                if(data.racks) localStorage.setItem('wms_racks',JSON.stringify(data.racks));
+                if(data.products) localStorage.setItem('wms_products',JSON.stringify(data.products));
+                if(data.statuses) localStorage.setItem('wms_statuses',JSON.stringify(data.statuses));
+                if(data.users) localStorage.setItem('users',JSON.stringify(data.users)); // Sync Users
+                renderDashboard(); populateDropdowns(); renderUserList(); // Refresh UI with cloud data
+            }
+            setBadge('badge-success','Cloud Aktif');
+            if(!auto) logFB("✅ Data tersinkronisasi dari Cloud!",'ok');
+        },(error)=>{logFB("❌ Gagal read: "+error.message,'err');setBadge('badge-danger','Cloud Error');}); 
+        if(!auto)logFB("Menghubungkan ke Firebase...",'info'); 
+    }
     function tesKoneksi() { if(!fbDbRef){alert("Hubungkan ke Cloud dulu!");return;} logFB("Melakukan tes koneksi...",'info'); fbDbRef.child('.info/connected').once('value').then(snap=>{if(snap.val()===true){logFB("✅ Tes Koneksi Berhasil! Online.",'ok');alert("Koneksi Cloud OK!");}else{logFB("⚠️ Tes Koneksi Gagal. Offline.",'warn');alert("Gagal terhubung.");}}).catch(e=>{logFB("❌ Error: "+e.message,'err');alert("Error: "+e.message);}); }
     function putuskanCloud() { if(fbAppWms){fbDbRef.off();fbAppWms.delete().then(()=>{fbAppWms=null;fbDbRef=null;setBadge('badge-warning','Lokal');logFB("Koneksi Cloud diputuskan.",'warn');alert("Koneksi diputuskan.");}).catch(e=>logFB("Gagal putuskan: "+e.message,'err'));}else{alert("Tidak ada koneksi Cloud.");} }
-    function syncToCloud() { if(fbDbRef){let d={db:getDb(),racks:getRacks(),products:getProducts(),statuses:getStatuses()};fbDbRef.set(d).catch(e=>console.error("Sync Error:",e));} }
+    function syncToCloud() { if(fbDbRef){let d={db:getDb(),racks:getRacks(),products:getProducts(),statuses:getStatuses(),users:getUsers()};fbDbRef.set(d).catch(e=>console.error("Sync Error:",e));} }
 </script>
 </body>
 </html>
