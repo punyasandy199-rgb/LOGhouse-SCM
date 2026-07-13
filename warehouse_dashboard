@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOG-House Corp. — WMS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <style>
+        :root{--bg-dark:#070a12;--sidebar-bg:#0f1420;--card-bg:rgba(255,255,255,.03);--card-border:rgba(255,255,255,.07);--text-main:#f8fafc;--text-muted:#94a3b8;--gradient-primary:linear-gradient(135deg,#22d3ee 0%,#0ea5e9 50%,#4338ca 100%);--gradient-success:linear-gradient(135deg,#34d399 0%,#059669 100%);--gradient-warning:linear-gradient(135deg,#fbbf24 0%,#d97706 100%);--gradient-danger:linear-gradient(135deg,#ef4444 0%,#b91c1c 100%);--accent-glow:rgba(34,211,238,.15)}
+        *{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+        h1,h2,h3,.brand-text{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
+        body{background-color:var(--bg-dark);color:var(--text-main);min-height:100vh;overflow-x:hidden}
+
+        #login-screen{position:fixed;top:0;left:0;width:100vw;height:100vh;background:radial-gradient(circle at 80% 20%,#1e1b4b 0%,#070a12 100%);display:flex;justify-content:center;align-items:center;z-index:9999}
+        .login-box{background:rgba(15,20,32,.75);backdrop-filter:blur(25px);border:1px solid var(--card-border);padding:45px 40px;border-radius:28px;width:100%;max-width:435px;box-shadow:0 25px 60px rgba(0,0,0,.6);text-align:center}
+        .login-box h2{font-size:1.85rem;margin-bottom:6px;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .login-box .sys-label{color:#34d399;font-size:11px;text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:25px;display:block}
+        
+        .app-wrapper{display:none}
+        nav{width:280px;background-color:var(--sidebar-bg);padding:30px 20px;display:flex;flex-direction:column;position:fixed;height:100vh;border-right:1px solid var(--card-border);z-index:100;overflow-y:auto}
+        .brand{display:flex;align-items:center;gap:12px;margin-bottom:30px;padding-left:10px}
+        .brand i{font-size:1.4rem;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .brand-text{font-size:1.25rem;letter-spacing:-.5px;font-weight:800}
+        .nav-item{padding:12px 16px;margin-bottom:6px;border-radius:12px;cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:12px;color:var(--text-muted);font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+        .nav-item i{font-size:14px}.nav-item:hover{color:var(--text-main);background:rgba(255,255,255,.03)}
+        .nav-item.active{background:var(--gradient-primary);color:#fff;box-shadow:0 8px 20px rgba(14,165,233,.25)}
+        .spv-only{border-left:3px solid #fbbf24}
+        main{flex-grow:1;margin-left:280px;padding:35px}
+        .view{display:none;animation:slideUp .5s ease}.view.active{display:block}
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:35px;flex-wrap:wrap;gap:10px}
+        .top-bar h2{font-size:1.8rem;letter-spacing:-.5px}
+
+        .card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:24px;padding:30px;margin-bottom:25px;backdrop-filter:blur(10px)}
+        .card h2{font-size:1.3rem;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+        .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+        .form-group{margin-bottom:20px}
+        label{display:block;margin-bottom:8px;color:var(--text-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+        input,select,textarea{width:100%;padding:16px 14px;background:rgba(0,0,0,.25);border:1px solid var(--card-border);border-radius:12px;color:var(--text-main);font-size:12px;transition:all .3s}
+        input:focus,select:focus,textarea:focus{outline:none;border-color:#22d3ee;box-shadow:0 0 15px var(--accent-glow)}
+        select option{background:var(--sidebar-bg);color:var(--text-main)}
+        .btn{padding:13px 20px;border:none;border-radius:12px;cursor:pointer;font-size:11px;font-weight:700;transition:all .3s;display:inline-flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.5px}
+        .btn-primary{background:var(--gradient-primary);color:#fff}.btn-success{background:var(--gradient-success);color:#fff}
+        .btn-warning{background:var(--gradient-warning);color:#070a12}.btn-danger{background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+        .btn-danger:hover{background:#ef4444;color:#fff}.btn-sm{padding:6px 12px;font-size:10px;border-radius:8px}.btn-xs{padding:4px 10px;font-size:9px;border-radius:6px}
+        .table-container{overflow-x:auto;margin-top:15px;border-radius:16px;border:1px solid var(--card-border)}
+        table{width:100%;border-collapse:collapse;font-size:11px;background:rgba(0,0,0,.1)}
+        th{background:rgba(255,255,255,.02);text-align:left;padding:14px 8px;border-bottom:1px solid var(--card-border);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-size:9.5px;white-space:nowrap}
+        td{padding:12px 8px;border-bottom:1px solid rgba(255,255,255,.02);vertical-align:middle;color:#e2e8f0;line-height:1.5;font-size:11px}
+        .badge{padding:4px 10px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;display:inline-block;white-space:nowrap}
+        .badge-success{background:rgba(52,211,153,.1);color:#34d399}.badge-warning{background:rgba(251,191,36,.1);color:#fbbf24}.badge-danger{background:rgba(239,68,68,.12);color:#f87171}.badge-info{background:rgba(59,130,246,.12);color:#60a5fa}
+        
+        .rack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(45px,1fr));gap:6px}
+        .rack-grid-large{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:10px}
+        .rack-box{aspect-ratio:1;background:rgba(255,255,255,0.02);border:2px solid var(--card-border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--text-muted);cursor:pointer;position:relative;transition:all .2s}
+        .rack-box:hover{transform:scale(1.1);z-index:2;box-shadow:0 4px 8px rgba(0,0,0,.3)}
+        .rack-box.slot-empty{background:rgba(52,211,153,.05);border-color:rgba(52,211,153,.3);color:#34d399}
+        .rack-box.slot-partial{background:rgba(251,191,36,.05);border-color:rgba(251,191,36,.3);color:#fbbf24}
+        .rack-box.slot-full{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.3);color:#f87171}
+        .rack-box-lg{background:rgba(52,211,153,.05);border:2px solid rgba(52,211,153,.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;min-height:90px;transition:.2s;color:var(--text-main)}
+        .rack-box-lg.slot-partial{background:rgba(251,191,36,.05);border-color:rgba(251,191,36,.3)}
+        .rack-box-lg.slot-full{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.3)}
+        .product-badge{font-size:7px;position:absolute;bottom:2px;left:2px;right:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:rgba(0,0,0,.8);color:white;padding:1px 3px;border-radius:3px}
+        .row-label{font-size:0.8rem;font-weight:bold;color:var(--text-muted);margin-bottom:8px}
+        .scan-input{border:2px dashed #22d3ee;background:rgba(34,211,238,.05);font-family:monospace;font-size:1.1rem;color:var(--text-main)}
+        .search-input{border:2px solid #34d399;background:rgba(52,211,153,.05);color:var(--text-main)}
+        .qr-input{border:2px dashed #a78bfa;background:rgba(167,139,250,.05);font-family:monospace;font-size:1.1rem;color:var(--text-main)}
+        
+        .flex-row{display:flex;gap:20px;flex-wrap:wrap}
+        .flex-1{flex:1;min-width:300px}
+        .w-full{width:100%;justify-content:center}
+        .justify-between{justify-content:space-between}
+        .items-center{align-items:center}
+        .mt-2{margin-top:20px}.mb-2{margin-bottom:20px}.mb-1{margin-bottom:10px}
+        .text-muted{color:var(--text-muted)}.text-primary{color:#22d3ee}.text-success{color:#34d399}.text-danger{color:#f87171}.text-warning{color:#fbbf24}
+        .fw-bold{font-weight:700}
+        .d-none{display:none!important}
+        
+        .fb-config-zone{background:rgba(251,191,36,.04);border:1px solid rgba(251,191,36,.15);border-radius:16px;padding:20px}
+        .fb-log{background:rgba(0,0,0,.3);border:1px solid var(--card-border);border-radius:10px;padding:12px 16px;margin-top:14px;max-height:180px;overflow-y:auto;font-family:'Courier New',monospace;font-size:10px;line-height:1.6;color:#94a3b8}
+        .log-ok{color:#34d399}.log-err{color:#f87171}.log-warn{color:#fbbf24}.log-info{color:#60a5fa}
+        
+        .settings-grid{display:grid;grid-template-columns:350px 1fr;gap:25px}
+        .settings-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:20px}
+        .settings-card h3{font-size:14px;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--card-border);color:#22d3ee;display:flex;align-items:center;gap:8px}
+        .user-card{background:rgba(255,255,255,0.02);border:1px solid var(--card-border);border-radius:12px;padding:15px;margin-bottom:15px}
+        .info-banner{background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.15);padding:12px 16px;border-radius:12px;margin-bottom:18px;font-size:11px;color:#22d3ee}
+
+        .modal{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(7,10,18,.85);backdrop-filter:blur(8px);display:none;justify-content:center;align-items:flex-start;z-index:10000;overflow-y:auto;padding:30px}
+        .modal-content{background:#0f1420;border:1px solid var(--card-border);border-radius:24px;padding:35px;width:100%;max-width:600px;box-shadow:0 20px 50px rgba(0,0,0,.5);animation:zoomIn .3s ease;margin-top:20px}
+        @keyframes zoomIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}
+        .modal-header h3{font-size:1.3rem;color:#22d3ee}.modal-close{cursor:pointer;color:var(--text-muted);font-size:1.5rem;transition:.2s}.modal-close:hover{color:#f87171}
+
+        @media(max-width:900px){nav{width:220px}main{margin-left:220px}.settings-grid{grid-template-columns:1fr}}
+        @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}main{margin-left:60px}}
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <div style="font-size:36px;margin-bottom:20px;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent"><i class="fa-solid fa-warehouse"></i></div>
+        <h2>LOGIN</h2>
+        <div class="sys-label">Warehouse Management System</div>
+        <div id="login-error" class="info-banner d-none" style="background:rgba(239,68,68,.1);color:#f87171;border-color:rgba(239,68,68,.2)"></div>
+        <div class="form-group" style="text-align:left"><label>Username</label><input type="text" id="login-username" placeholder="Username" autocomplete="off"></div>
+        <div class="form-group" style="text-align:left"><label>Password</label><input type="password" id="login-pass" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')prosesLogin()"></div>
+        <button class="btn btn-primary w-full" onclick="prosesLogin()">Masuk <i class="fa fa-arrow-right"></i></button>
+        <p style="margin-top:20px;font-size:10px;color:rgba(148,163,184,.35)">spv/123 | operator/123</p>
+    </div>
+</div>
+
+<div id="app-wms" class="app-wrapper" style="display:none">
+    <nav id="sidebar-wms">
+        <div class="brand"><i class="fa-solid fa-warehouse"></i><span class="brand-text">LOG-House <span style="font-size:10px;color:#34d399;border:1px solid #34d399;padding:1px 6px;border-radius:6px">WMS</span></span></div>
+        <div class="nav-item active" onclick="showView('wms-dashboard', this)"><i class="fa-solid fa-tachometer-alt"></i> <span>Dashboard</span></div>
+        <div class="nav-item" onclick="showView('wms-inbound', this)"><i class="fa-solid fa-arrow-circle-down"></i> <span>Inbound</span></div>
+        <div class="nav-item" onclick="showView('wms-outbound', this)"><i class="fa-solid fa-arrow-circle-up"></i> <span>Outbound</span></div>
+        <div class="nav-item" onclick="showView('wms-rack', this)"><i class="fa-solid fa-cubes"></i> <span>Master Rak</span></div>
+        <div class="nav-item" onclick="showView('wms-product', this)"><i class="fa-solid fa-coffee"></i> <span>Master Produk</span></div>
+        <div class="nav-item" onclick="showView('wms-status', this)"><i class="fa-solid fa-tags"></i> <span>Master Status</span></div>
+        <div class="nav-item" onclick="showView('wms-firebase', this)"><i class="fa-solid fa-cloud-arrow-up"></i> <span>Konfigurasi Cloud</span></div>
+        <div class="nav-item spv-only" onclick="showView('wms-settings', this)"><i class="fa-solid fa-user-shield"></i> <span>Manajemen Akun</span></div>
+        <button class="btn btn-danger" style="margin-top:auto;justify-content:center" onclick="prosesLogout()"><i class="fa-solid fa-power-off"></i> <span>Keluar</span></button>
+    </nav>
+    <main id="main-wms">
+        <div class="top-bar">
+            <h2 id="wms-view-title">Dashboard WMS</h2>
+            <div style="display:flex;align-items:center;gap:10px">
+                <div id="wms-sync-badge" class="badge badge-warning"><i class="fa fa-database"></i> Lokal</div>
+                <div id="user-badge-wms" style="font-weight:600;font-size:11px;padding:10px 18px;background:rgba(255,255,255,.04);border:1px solid var(--card-border);border-radius:30px;text-transform:uppercase"></div>
+            </div>
+        </div>
+
+        <div id="wms-dashboard" class="view active">
+            <div class="flex-row mb-2">
+                <div class="card flex-1" style="border-left:4px solid #22d3ee"><h2 style="color:#22d3ee;font-size:14px">Total Pallet</h2><h1 id="dash-total-pallet">0</h1></div>
+                <div class="card flex-1" style="border-left:4px solid #34d399"><h2 style="color:#34d399;font-size:14px">Slot Terpakai</h2><h1 id="dash-slot-used">0</h1></div>
+                <div class="card flex-1" style="border-left:4px solid #f87171"><h2 style="color:#f87171;font-size:14px">Slot Penuh</h1><h1 id="dash-slot-full">0</h1></div>
+                <div class="card flex-1" style="border-left:4px solid #fbbf24"><h2 style="color:#fbbf24;font-size:14px">Slot Tersedia</h2><h1 id="dash-slot-avail">0</h1></div>
+            </div>
+            <div class="card"><div class="flex-row justify-between items-center mb-1"><h2>Peta Warehouse</h2><div><span class="badge badge-success">Kosong</span> <span class="badge badge-warning">Sebagian</span> <span class="badge badge-danger">Penuh</span></div></div><div id="dash-rack-map"></div></div>
+        </div>
+
+        <div id="wms-inbound" class="view">
+            <div class="flex-row">
+                <div style="flex:0 0 380px">
+                    <div class="card"><h2>Scan & Input Inbound</h2>
+                        <div class="form-group"><label>1. Scan QR Code Rak</label><input type="text" id="inQrRack" class="qr-input" placeholder="Arahkan scanner QR ke Rak..." autofocus></div>
+                        <div class="form-group"><label>2. Scan Barcode Produk</label><input type="text" id="inBarcode" class="scan-input" placeholder="Arahkan scanner barcode..."></div>
+                        <div id="inParsedInfo" class="text-primary fw-bold mb-2" style="font-size:11px"></div>
+                        <div class="form-group"><label>3. Info Produk & Status</label><select id="inProduct" class="mb-1"></select><select id="inStatus"></select></div>
+                        <div class="form-group"><label>4. Lokasi Penyimpanan</label><input type="text" id="inRack" list="rackList" class="search-input mb-1" placeholder="Ketik Rak (Misal: A)..." autocomplete="off"><datalist id="rackList"></datalist><input type="text" id="inSlot" list="slotList" class="search-input" placeholder="Ketik Slot (Misal: 1a)..." autocomplete="off"><datalist id="slotList"></datalist></div>
+                        <div class="form-group"><label>5. Nomor Pallet (Range)</label><div class="flex-row items-center"><input type="number" id="inPalletStart" placeholder="Dari (XX)" min="1" value="1"><span class="text-muted fw-bold" style="font-size:18px">-</span><input type="number" id="inPalletEnd" placeholder="Sampai (YY)" min="1" value="1"></div><small class="text-muted" style="font-size:10px; margin-top:5px; display:block">Kosongkan slot di atas untuk auto-assign ke slot kosong pertama di rak.</small></div>
+                        <button class="btn btn-primary w-full mt-2" onclick="submitInbound()"><i class="fa fa-check-circle"></i> SUBMIT PLOTTING</button>
+                    </div>
+                </div>
+                <div class="flex-1"><div class="card"><div class="flex-row justify-between items-center mb-1"><h2>Visualisasi Rak</h2><h2 class="text-primary" id="inVisTitle">Pilih Rak</h2></div><div id="inRackVisual" style="max-height:650px;overflow-y:auto"></div></div></div>
+            </div>
+        </div>
+
+        <div id="wms-outbound" class="view">
+            <div class="flex-row">
+                <div style="flex:0 0 350px"><div class="card"><h2>Outbound Scan</h2><div class="form-group"><label>1. Scan Barcode Keluar</label><input type="text" id="outBarcode" class="scan-input" placeholder="Arahkan scanner..."></div><div id="outItemInfo" class="mb-2"></div><div class="form-group d-none" id="outVerifyCard"><label>2. Verifikasi Rak</label><input type="text" id="outVerifyRack" list="outRackList" class="search-input mb-1" placeholder="Scan/Ketik Rak..." autocomplete="off"><datalist id="outRackList"></datalist><div id="outVerifyResult" class="text-muted fw-bold mb-2" style="font-size:11px"></div><button class="btn btn-danger w-full d-none" id="btnOutbound" onclick="submitOutbound()"><i class="fa fa-truck-loading"></i> KONFIRMASI KELUAR</button></div></div></div>
+                <div class="flex-1"><div class="card"><h2>Info Pengeluaran</h2><div id="outInfoPanel" class="text-center text-muted" style="padding:40px 0"><i class="fa fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div></div></div>
+            </div>
+        </div>
+
+        <div id="wms-rack" class="view"><div class="card"><div class="flex-row justify-between items-center mb-2"><h2>Master Rak</h2><button class="btn btn-primary" onclick="showModal('rackModal')"><i class="fa fa-plus"></i> Tambah Rak</button></div><div class="table-container"><table><thead><tr><th>ID Rak</th><th>Produk Utama</th><th>Jumlah Slot</th><th>Aksi</th></tr></thead><tbody id="rackTableBody"></tbody></table></div></div></div>
+        <div id="wms-product" class="view"><div class="card"><div class="flex-row justify-between items-center mb-2"><h2>Master Produk</h2><button class="btn btn-primary" onclick="showModal('productModal')"><i class="fa fa-plus"></i> Tambah Produk</button></div><div class="table-container"><table><thead><tr><th>Kode</th><th>Nama Produk</th><th>Satuan</th><th>Berat/Unit</th><th>Aksi</th></tr></thead><tbody id="productTableBody"></tbody></table></div></div></div>
+        <div id="wms-status" class="view"><div class="card"><div class="flex-row justify-between items-center mb-2"><h2>Master Status</h2><button class="btn btn-primary" onclick="showModal('statusModal')"><i class="fa fa-plus"></i> Tambah Status</button></div><div class="table-container"><table><thead><tr><th>Nama Status</th><th>Aksi</th></tr></thead><tbody id="statusTableBody"></tbody></table></div></div></div>
+
+        <div id="wms-firebase" class="view">
+            <div class="card fb-config-zone">
+                <h2><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Konfigurasi Cloud</h2>
+                <p class="text-muted mb-2">Hubungkan aplikasi WMS ke Firebase Realtime Database untuk sinkronisasi.</p>
+                <div class="form-group"><label>Database URL</label><input type="text" id="fb-url" placeholder="https://xxx-default-rtdb..."></div>
+                <div class="form-grid">
+                    <div class="form-group"><label>API Key</label><input type="text" id="fb-api" placeholder="AIzaSy..."></div>
+                    <div class="form-group"><label>Project ID</label><input type="text" id="fb-project" placeholder="nama-project"></div>
+                </div>
+                <div class="form-group"><label>App ID</label><input type="text" id="fb-appid" placeholder="1:12345:web:abcde"></div>
+                <div style="display:flex;gap:10px;margin-top:5px;flex-wrap:wrap">
+                    <button class="btn btn-success" onclick="simpanHubungkan()"><i class="fa fa-cloud-arrow-up"></i> Simpan & Hubungkan</button>
+                    <button class="btn btn-primary" onclick="tesKoneksi()"><i class="fa fa-plug"></i> Tes Koneksi</button>
+                    <button class="btn btn-danger" onclick="putuskanCloud()"><i class="fa fa-cloud-arrow-down"></i> Putuskan</button>
+                </div>
+                <div id="fb-log" class="fb-log d-none mt-2"></div>
+            </div>
+        </div>
+
+        <div id="wms-settings" class="view"><div class="card"><h2><i class="fa-solid fa-users-gear text-warning"></i> Manajemen Akun</h2><div class="settings-grid"><div class="settings-card"><h3><i class="fa fa-user-plus"></i> Tambah User</h3><form id="form-add-user"><div class="form-group"><label>Role</label><select id="usr-role"><option value="OPERATOR">Operator</option><option value="SPV">Supervisor</option></select></div><div class="form-group"><label>Username</label><input type="text" id="usr-name" required></div><div class="form-group"><label>Password</label><input type="text" id="usr-pass" required></div><button type="submit" class="btn btn-warning w-full" style="color:#fff">Simpan</button></form></div><div class="settings-card"><h3><i class="fa fa-list-check"></i> Daftar User</h3><div id="user-list-container"></div></div></div></div></div>
+    </main>
+</div>
+
+<div class="modal" id="rackModal"><div class="modal-content"><div class="modal-header"><h3 id="rackModalTitle">Tambah Rak</h3><span class="modal-close" onclick="closeModal('rackModal')">&times;</span></div><input type="hidden" id="editOldRackId"><div class="form-group"><label>ID Rak</label><input type="text" id="mRackId" placeholder="Contoh: A"></div><div class="form-group"><label>Produk Utama</label><input type="text" id="mRackProduct" placeholder="Contoh: Instant Coffee"></div><div class="form-group"><label>Daftar Slot (Pisahkan koma)</label><textarea id="mRackSlots" rows="4" placeholder="1a, 1b, 2a..."></textarea></div><button class="btn btn-primary w-full" onclick="saveRack()">Simpan</button></div></div>
+<div class="modal" id="productModal"><div class="modal-content"><div class="modal-header"><h3 id="productModalTitle">Tambah Produk</h3><span class="modal-close" onclick="closeModal('productModal')">&times;</span></div><input type="hidden" id="editOldProdId"><div class="form-grid"><div class="form-group"><label>Kode Produk</label><input type="text" id="mProdId" placeholder="IC01"></div><div class="form-group"><label>Nama Produk</label><input type="text" id="mProdName" placeholder="Instant Coffee"></div></div><div class="form-grid"><div class="form-group"><label>Satuan</label><input type="text" id="mProdUnit" placeholder="Karton"></div><div class="form-group"><label>Berat/Unit</label><input type="number" step="0.01" id="mProdWeight" placeholder="5.5"></div></div><button class="btn btn-primary w-full mt-2" onclick="saveProduct()">Simpan</button></div></div>
+<div class="modal" id="statusModal"><div class="modal-content"><div class="modal-header"><h3>Tambah Status</h3><span class="modal-close" onclick="closeModal('statusModal')">&times;</span></div><input type="hidden" id="editOldStatus"><div class="form-group"><label>Nama Status</label><input type="text" id="mStatusName" placeholder="OK, BO, HOLD"></div><button class="btn btn-primary w-full" onclick="saveStatus()">Simpan</button></div></div>
+<div class="modal" id="slotDetailModal"><div class="modal-content"><div class="modal-header"><h3 id="slotDetailTitle">Detail Slot</h3><span class="modal-close" onclick="closeModal('slotDetailModal')">&times;</span></div><div id="slotDetailBody"></div></div></div>
+
+<script>
+    // ======================= CORE & AUTH =======================
+    let currentUser = null;
+    const MAX_PALLET = 4;
+
+    if(!localStorage.getItem('users')) localStorage.setItem('users', JSON.stringify({ 'spv': {password:'123', role:'SPV'}, 'operator': {password:'123', role:'OPERATOR'} }));
+    const getUsers = () => JSON.parse(localStorage.getItem('users'));
+    const saveUsers = (u) => localStorage.setItem('users', JSON.stringify(u));
+
+    function prosesLogin() {
+        let u = document.getElementById('login-username').value.trim().toLowerCase(), p = document.getElementById('login-pass').value, users = getUsers();
+        if(users[u] && users[u].password === p) { currentUser = {username: u, role: users[u].role}; document.getElementById('login-screen').style.display = 'none'; document.getElementById('app-wms').style.display = 'flex'; initWMS(); } 
+        else { let e = document.getElementById('login-error'); e.innerText = "Username atau Password salah!"; e.classList.remove('d-none'); }
+    }
+    function prosesLogout() { currentUser=null; document.getElementById('app-wms').style.display='none'; document.getElementById('login-screen').style.display='flex'; }
+
+    // ======================= WMS LOGIC =======================
+    if(!localStorage.getItem('wms_statuses')) localStorage.setItem('wms_statuses', JSON.stringify(['OK', 'BO', 'HOLD']));
+    if(!localStorage.getItem('wms_products')) localStorage.setItem('wms_products', JSON.stringify([ {id:'IC01', name:'Instant Coffee 200g', unit:'Karton', weight:'5.5'}, {id:'IC02', name:'Instant Coffee 500g', unit:'Karton', weight:'8.0'} ]));
+    if(!localStorage.getItem('wms_racks')) { let iR=[]; ['A','B','C','D','E','F','G','H','I','J'].forEach(r => iR.push({ id: r, product: 'Instant Coffee', slots: genDefSlots() })); localStorage.setItem('wms_racks', JSON.stringify(iR)); }
+    if(!localStorage.getItem('wms_db')) { let iDb = {}; ['A','B','C','D','E','F','G','H','I','J'].forEach(r => iDb[r] = {}); localStorage.setItem('wms_db', JSON.stringify(iDb)); }
+
+    function genDefSlots() { let s=[]; for(let r=1; r<=4; r++) { for(let c of ['a','b','c','d','e','f','g','h','i','j','k','l','m']) { s.push(r+c); } } return s; }
+    const getStatuses = () => JSON.parse(localStorage.getItem('wms_statuses')); const saveStatuses = (s) => localStorage.setItem('wms_statuses', JSON.stringify(s));
+    const getProducts = () => JSON.parse(localStorage.getItem('wms_products')); const saveProducts = (p) => localStorage.setItem('wms_products', JSON.stringify(p));
+    const getRacks = () => JSON.parse(localStorage.getItem('wms_racks')); const saveRacks = (r) => localStorage.setItem('wms_racks', JSON.stringify(r));
+    const getDb = () => JSON.parse(localStorage.getItem('wms_db')); const saveDb = (db) => localStorage.setItem('wms_db', JSON.stringify(db));
+
+    let currentOutboundData = null;
+
+    function initWMS() {
+        document.getElementById('user-badge-wms').innerHTML = `<i class="fa fa-user"></i> ${currentUser.username.toUpperCase()} (${currentUser.role})`;
+        document.querySelectorAll('#sidebar-wms .spv-only').forEach(el => el.style.display = currentUser.role === 'SPV' ? 'flex' : 'none');
+        populateDropdowns(); loadCloudConfig(); showView('wms-dashboard', document.querySelector('#sidebar-wms .nav-item'));
+    }
+
+    function showView(viewId, el) {
+        document.querySelectorAll('#main-wms .view').forEach(v => v.classList.remove('active')); document.getElementById(viewId).classList.add('active');
+        document.querySelectorAll('#sidebar-wms .nav-item').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active');
+        if(viewId==='wms-dashboard') renderDashboard(); if(viewId==='wms-inbound') { clearInboundForm(); renderInboundVisual(); } if(viewId==='wms-outbound') resetOutboundForm();
+        if(viewId==='wms-rack') renderRackTable(); if(viewId==='wms-product') renderProductTable(); if(viewId==='wms-status') renderStatusTable(); if(viewId==='wms-settings') renderUserList();
+    }
+    function showModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function populateDropdowns() {
+        let racks=getRacks().map(r=>r.id), rH=''; racks.forEach(r=>rH+=`<option value="Rak ${r}">`); document.getElementById('rackList').innerHTML=rH; document.getElementById('outRackList').innerHTML=rH;
+        let prods=getProducts(), pH='<option value="">-- Pilih --</option>'; prods.forEach(p=>pH+=`<option value="${p.id}">${p.id} - ${p.name}</option>`); document.getElementById('inProduct').innerHTML=pH;
+        let stats=getStatuses(), sH=''; stats.forEach(s=>sH+=`<option value="${s}">${s}</option>`); document.getElementById('inStatus').innerHTML=sH; updateSlotDatalist('');
+    }
+    function updateSlotDatalist(rackId) { let racks=getRacks(), rack=racks.find(r=>r.id===rackId), sH=''; if(rack){rack.slots.forEach(s=>sH+=`<option value="${rackId}.${s}">`)}else{racks.forEach(r=>r.slots.forEach(s=>sH+=`<option value="${r.id}.${s}">`))} document.getElementById('slotList').innerHTML=sH; }
+    
+    // Listeners
+    document.getElementById('inQrRack').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); let raw=this.value.trim().toUpperCase().replace(/RAK[\s\-]*/i,'').trim(); if(getRacks().map(r=>r.id).includes(raw)){ document.getElementById('inRack').value="Rak "+raw; updateSlotDatalist(raw); renderInboundVisual(); document.getElementById('inBarcode').focus(); } else { alert("Rak tidak ditemukan!"); } this.value=''; }});
+    document.getElementById('inRack').addEventListener('input', function() { let val=this.value.replace('Rak ','').toUpperCase(); let rid=getRacks().map(r=>r.id).includes(val)?val:''; updateSlotDatalist(rid); renderInboundVisual(); });
+    function parseBarcode(code) { if(!code||code.length<7) return null; try { return { type:code.charAt(0)==='P'?'Produksi':'Unknown', tower:code.charAt(1)==='A'?'Tower 1':'Tower 2', batch:code.substring(2,5) }; } catch(e) { return null; } }
+    document.getElementById('inBarcode').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); let p=parseBarcode(this.value); document.getElementById('inParsedInfo').innerHTML = p ? `<i class="fa fa-check-circle text-success"></i> Tipe: <b>${p.type}</b> | Batch: <b>${p.batch}</b>` : "<span class='text-danger'>Format salah</span>"; }});
+    function clearInboundForm() { document.getElementById('inQrRack').value=''; document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inRack').value=''; document.getElementById('inSlot').value=''; document.getElementById('inPalletStart').value=1; document.getElementById('inPalletEnd').value=1; updateSlotDatalist(''); }
+    
+    function renderInboundVisual() {
+        let db=getDb(), racks=getRacks().map(r=>r.id), rackVal=document.getElementById('inRack').value.replace('Rak ','').toUpperCase(), selRack=racks.includes(rackVal)?rackVal:null;
+        document.getElementById('inVisTitle').innerText = selRack ? `Rak ${selRack}` : 'Pilih Rak';
+        if(!selRack) { document.getElementById('inRackVisual').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-hand-pointer fa-3x mb-3"></i><br>Scan QR Rak.</div>'; return; }
+        if(!db[selRack]) db[selRack]={}; let html='', rackObj=getRacks().find(r=>r.id===selRack); if(!rackObj) return;
+        let gs={}; rackObj.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O'; if(!gs[rn])gs[rn]=[]; gs[rn].push(s);});
+        for(let rn in gs) { html+=`<div class="row-label mt-2">Baris ${rn}</div><div class="rack-grid-large">`; gs[rn].forEach(slot=>{ let items=db[selRack][slot]||[], isFull=items.length>=MAX_PALLET, sc=items.length===0?'slot-empty':(items.length<MAX_PALLET?'slot-partial':'slot-full'), pl=items.map(i=>`<span class="badge badge-info me-1 mb-1" style="font-size:9px">${i.pallet}</span>`).join(' '); html+=`<div class="rack-box-lg ${sc}" onclick="document.getElementById('inSlot').value='${selRack}.${slot}'"><strong>${selRack}.${slot}</strong> <span class="badge ${isFull?'badge-danger':'badge-success'}" style="font-size:9px">${items.length}/${MAX_PALLET}</span><div style="min-height:25px; margin-top:5px">${pl}</div></div>`; }); html+='</div>'; }
+        document.getElementById('inRackVisual').innerHTML=html;
+    }
+
+    function submitInbound() {
+        let barcode=document.getElementById('inBarcode').value, rackVal=document.getElementById('inRack').value.replace('Rak ','').toUpperCase(), slotVal=document.getElementById('inSlot').value.split('.').pop().toLowerCase().trim(), productId=document.getElementById('inProduct').value, status=document.getElementById('inStatus').value, pS=parseInt(document.getElementById('inPalletStart').value)||1, pE=parseInt(document.getElementById('inPalletEnd').value)||pS;
+        if(pS>pE){let t=pS;pS=pE;pE=t;} let racks=getRacks(), rackObj=racks.find(r=>r.id===rackVal);
+        if(!barcode||!rackVal||!productId||isNaN(pS)||isNaN(pE)){alert("Lengkapi data & Range Pallet!");return;} if(!rackObj){alert("Rak tidak valid!");return;}
+        let db=getDb(); if(!db[rackVal])db[rackVal]={}; let palletsToAdd=pE-pS+1, addedCount=0;
+        if(!slotVal){for(let s of rackObj.slots){let it=db[rackVal][s]||[];if(it.length<MAX_PALLET){slotVal=s;document.getElementById('inSlot').value=rackVal+'.'+s;break;}}if(!slotVal){alert(`Rak ${rackVal} penuh!`);return;}}
+        if(!rackObj.slots.includes(slotVal)){alert(`Slot ${slotVal} tidak ada!`);return;} if(!db[rackVal][slotVal])db[rackVal][slotVal]=[]; let curIt=db[rackVal][slotVal], avS=MAX_PALLET-curIt.length;
+        if(palletsToAdd>avS){if(!confirm(`Slot hanya tersisa ${avS} ruang. Lanjutkan ${avS} pallet?`))return; pE=pS+avS-1;}
+        let prodObj=getProducts().find(p=>p.id===productId), parsed=parseBarcode(barcode);
+        for(let i=pS;i<=pE;i++){ curIt.push({ barcode, pallet:String(i), productId, productName:prodObj?prodObj.name:'Unknown', status, batch:parsed?parsed.batch:'-', unit:prodObj?prodObj.unit:'-', weight:prodObj?prodObj.weight:'-', timestamp:new Date().toLocaleString('id-ID') }); addedCount++; }
+        saveDb(db); syncToCloud(); alert(`✅ Sukses! ${addedCount} Pallet masuk ke Rak ${rackVal} Slot ${slotVal}`);
+        document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inPalletStart').value=1; document.getElementById('inPalletEnd').value=1; renderInboundVisual(); renderDashboard();
+    }
+
+    function renderDashboard() {
+        let db=getDb(), racks=getRacks(), tP=0, tSU=0, fS=0, mH='<div class="flex-row" style="flex-wrap:wrap">';
+        racks.forEach(ro=>{ let r=ro.id, rT=0, iRF=true, sH=''; if(!db[r])db[r]={}; let gs={}; ro.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O';if(!gs[rn])gs[rn]=[];gs[rn].push(s);});
+        for(let rn in gs){gs[rn].forEach(slot=>{let it=db[r][slot]||[];rT+=it.length;let sc=it.length===0?'slot-empty':(it.length<MAX_PALLET?'slot-partial':'slot-full');if(it.length<MAX_PALLET)iRF=false;if(it.length>=MAX_PALLET)fS++;if(it.length>0)tSU++;let pb=it.length>0?`<div class="product-badge">${(it[0].productName||'').substring(0,5)}</div>`:'';sH+=`<div class="rack-box ${sc}" onclick="showSlotDetail('${r}','${slot}')">${slot} ${pb}</div>`;});}
+        tP+=rT; mH+=`<div style="flex:1;min-width:250px;margin-bottom:20px"><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between"><strong>RAK ${r}</strong><span class="badge badge-info">${ro.product}</span><span class="badge badge-warning">${rT} Pallet</span></div><div style="padding:15px" class="rack-grid">${sH}</div></div></div>`;});
+        mH+='</div>'; saveDb(db); document.getElementById('dash-rack-map').innerHTML=mH; let tA=(racks.reduce((a,r)=>a+r.slots.length,0))-fS;
+        document.getElementById('dash-total-pallet').innerText=tP; document.getElementById('dash-slot-used').innerText=tSU; document.getElementById('dash-slot-full').innerText=fS; document.getElementById('dash-slot-avail').innerText=tA;
+    }
+
+    function showSlotDetail(rackId, slotId) {
+        let db=getDb(), items=db[rackId]?db[rackId][slotId]||[]:[]; document.getElementById('slotDetailTitle').innerText=`Isi Slot: Rak ${rackId} - ${slotId}`;
+        if(items.length===0){document.getElementById('slotDetailBody').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-box-open fa-3x mb-3"></i><br>Slot ini kosong.</div>';}else{let lH='';items.forEach(i=>{let sc=i.status==='OK'?'badge-success':(i.status==='HOLD'?'badge-warning':'badge-danger');lH+=`<div class="user-card" style="display:flex;justify-content:space-between;align-items:center"><div><strong class="text-primary">${i.productName}</strong><br><small>Pallet: <b>${i.pallet}</b></small></div><span class="badge ${sc}">${i.status}</span></div>`;});document.getElementById('slotDetailBody').innerHTML=lH;} showModal('slotDetailModal');
+    }
+
+    function resetOutboundForm() { document.getElementById('outBarcode').value=''; document.getElementById('outItemInfo').innerHTML=''; document.getElementById('outVerifyCard').classList.add('d-none'); document.getElementById('btnOutbound').classList.add('d-none'); document.getElementById('outVerifyRack').value=''; currentOutboundData=null; document.getElementById('outInfoPanel').innerHTML='<div class="text-muted text-center" style="padding:40px 0"><i class="fas fa-box-open fa-3x mb-2"></i><br>Scan barcode</div>'; }
+    document.getElementById('outBarcode').addEventListener('keypress', function(e) {
+        if(e.key==='Enter'){ e.preventDefault(); let bc=this.value, db=getDb(), f=null; 
+        for(let ro of getRacks()){let r=ro.id;if(!db[r])continue;for(let s in db[r]){for(let i=0;i<db[r][s].length;i++){if(db[r][s][i].barcode===bc){f={rack:r,slot:s,index:i,data:db[r][s][i]};break;}}if(f)break;}if(f)break;}
+        if(f){currentOutboundData=f;document.getElementById('outItemInfo').innerHTML=`<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Rak: <b>${f.rack}</b> | Slot: <b>${f.slot}</b><br>Pallet No: <b>${f.data.pallet}</b></div>`;document.getElementById('outVerifyCard').classList.remove('d-none');document.getElementById('outInfoPanel').innerHTML=`<h4 class="text-danger">Rak ${f.rack} - ${f.slot}</h4><p>${f.data.productName}</p>`;}else{alert("❌ Barang tidak ditemukan!");resetOutboundForm();}}
+    });
+    document.getElementById('outVerifyRack').addEventListener('input', function() { if(!currentOutboundData)return; let v=this.value.replace('Rak ','').toUpperCase(), btn=document.getElementById('btnOutbound'), res=document.getElementById('outVerifyResult'); if(v===currentOutboundData.rack){res.innerHTML="<span class='text-success'><i class='fa fa-check-circle'></i> Cocok!</span>";btn.classList.remove('d-none');}else{res.innerHTML=`<span class='text-danger'>Harus Rak ${currentOutboundData.rack}</span>`;btn.classList.add('d-none');} });
+    function submitOutbound() { if(!currentOutboundData)return; let v=document.getElementById('outVerifyRack').value.replace('Rak ','').toUpperCase(); if(v!==currentOutboundData.rack){alert("Gagal! Rak tidak sesuai.");return;} let db=getDb(); db[currentOutboundData.rack][currentOutboundData.slot].splice(currentOutboundData.index,1); if(db[currentOutboundData.rack][currentOutboundData.slot].length===0)delete db[currentOutboundData.rack][currentOutboundData.slot]; saveDb(db); syncToCloud(); alert("✅ Outbound berhasil!"); resetOutboundForm(); renderDashboard(); }
+
+    function renderRackTable() { let racks=getRacks(),h='';racks.forEach(r=>h+=`<tr><td><strong>${r.id}</strong></td><td>${r.product}</td><td>${r.slots.length}</td><td><button class="btn btn-warning btn-xs" onclick="editRack('${r.id}')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteRack('${r.id}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('rackTableBody').innerHTML=h||'<tr><td colspan="4" class="text-center text-muted">Tidak ada data</td></tr>';}
+    function editRack(id){let r=getRacks().find(x=>x.id===id);if(r){document.getElementById('editOldRackId').value=r.id;document.getElementById('mRackId').value=r.id;document.getElementById('mRackProduct').value=r.product;document.getElementById('mRackSlots').value=r.slots.join(', ');showModal('rackModal');}}
+    function saveRack(){let id=document.getElementById('mRackId').value.toUpperCase(),prod=document.getElementById('mRackProduct').value,ss=document.getElementById('mRackSlots').value,oid=document.getElementById('editOldRackId').value;if(!id||!ss)return;let slots=ss.split(',').map(s=>s.trim().toLowerCase()),racks=getRacks();if(oid){let i=racks.findIndex(r=>r.id===oid);if(i!==-1)racks[i]={id,product:prod,slots};}else{if(racks.find(r=>r.id===id)){alert('Sudah ada!');return;}racks.push({id,product:prod,slots});let db=getDb();db[id]={};saveDb(db);}saveRacks(racks);closeModal('rackModal');renderRackTable();populateDropdowns();syncToCloud();}
+    function deleteRack(id){if(!confirm(`Hapus Rak ${id}?`))return;saveRacks(getRacks().filter(r=>r.id!==id));let db=getDb();delete db[id];saveDb(db);renderRackTable();populateDropdowns();syncToCloud();}
+
+    function renderProductTable(){let p=getProducts(),h='';p.forEach(x=>h+=`<tr><td><strong>${x.id}</strong></td><td>${x.name}</td><td>${x.unit||'-'}</td><td>${x.weight||'-'}</td><td><button class="btn btn-warning btn-xs" onclick="editProduct('${x.id}')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteProduct('${x.id}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('productTableBody').innerHTML=h||'<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>';}
+    function editProduct(id){let p=getProducts().find(x=>x.id===id);if(p){document.getElementById('editOldProdId').value=p.id;document.getElementById('mProdId').value=p.id;document.getElementById('mProdName').value=p.name;document.getElementById('mProdUnit').value=p.unit;document.getElementById('mProdWeight').value=p.weight;showModal('productModal');}}
+    function saveProduct(){let id=document.getElementById('mProdId').value,n=document.getElementById('mProdName').value,u=document.getElementById('mProdUnit').value,w=document.getElementById('mProdWeight').value,oid=document.getElementById('editOldProdId').value;if(!id||!n)return;let ps=getProducts();if(oid){let i=ps.findIndex(p=>p.id===oid);if(i!==-1)ps[i]={id,name:n,unit:u,weight:w};}else{if(ps.find(p=>p.id===id)){alert('Sudah ada!');return;}ps.push({id,name:n,unit:u,weight:w});}saveProducts(ps);closeModal('productModal');renderProductTable();populateDropdowns();syncToCloud();}
+    function deleteProduct(id){if(!confirm(`Hapus ${id}?`))return;saveProducts(getProducts().filter(p=>p.id!==id));renderProductTable();populateDropdowns();syncToCloud();}
+
+    function renderStatusTable(){let s=getStatuses(),h='';s.forEach(x=>h+=`<tr><td><strong>${x}</strong></td><td><button class="btn btn-danger btn-xs" onclick="deleteStatus('${x}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('statusTableBody').innerHTML=h||'<tr><td colspan="2" class="text-center text-muted">Tidak ada data</td></tr>';}
+    function saveStatus(){let n=document.getElementById('mStatusName').value,o=document.getElementById('editOldStatus').value;if(!n)return;let ss=getStatuses();if(o){let i=ss.indexOf(o);if(i!==-1)ss[i]=n;}else{if(ss.includes(n)){alert('Sudah ada!');return;}ss.push(n);}saveStatuses(ss);closeModal('statusModal');renderStatusTable();populateDropdowns();document.getElementById('mStatusName').value='';syncToCloud();}
+    function deleteStatus(s){if(!confirm(`Hapus ${s}?`))return;saveStatuses(getStatuses().filter(x=>x!==s));renderStatusTable();populateDropdowns();syncToCloud();}
+
+    function renderUserList(){let u=getUsers(),h='';for(let x in u){let r=u[x].role,b=r==='SPV'?'badge-warning':'badge-success';h+=`<div class="user-card"><div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:14px">${x}</strong><span class="badge ${b}">${r}</span></div></div>`;}document.getElementById('user-list-container').innerHTML=h;}
+    document.getElementById('form-add-user').addEventListener('submit', function(e){ e.preventDefault(); let r=document.getElementById('usr-role').value,n=document.getElementById('usr-name').value.trim().toLowerCase(),p=document.getElementById('usr-pass').value; if(!n||!p){alert("Isi data!");return;} let u=getUsers(); if(u[n]){alert("Sudah ada!");return;} u[n]={password:p,role:r};saveUsers(u);renderUserList();document.getElementById('usr-name').value='';document.getElementById('usr-pass').value='';alert("User ditambahkan!"); });
+
+    // ======================= FIREBASE CLOUD LOGIC =======================
+    let fbAppWms = null;
+    let fbDbRef = null;
+
+    function logFB(msg, type='info') { let l=document.getElementById('fb-log'); l.classList.remove('d-none'); l.innerHTML+=`<div class="log-${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`; l.scrollTop=l.scrollHeight; }
+    function setBadge(c, t) { let b=document.getElementById('wms-sync-badge'); b.className='badge '+c; b.innerHTML=`<i class="fa fa-${c==='badge-success'?'cloud':'database'}"></i> ${t}`; }
+
+    function loadCloudConfig() {
+        let c = JSON.parse(localStorage.getItem('fb_config_wms'));
+        if(c && c.url) {
+            document.getElementById('fb-url').value = c.url;
+            document.getElementById('fb-api').value = c.api;
+            document.getElementById('fb-project').value = c.project;
+            document.getElementById('fb-appid').value = c.appid || '';
+            simpanHubungkan(true); // Auto-connect
+        }
+    }
+
+    function simpanHubungkan(auto=false) {
+        let url=document.getElementById('fb-url').value, api=document.getElementById('fb-api').value, proj=document.getElementById('fb-project').value, appid=document.getElementById('fb-appid').value;
+        if(!url||!api||!proj) { if(!auto) alert("Harap lengkapi URL, API Key, dan Project ID!"); return; }
+        
+        localStorage.setItem('fb_config_wms', JSON.stringify({url, api, project:proj, appid}));
+        if(!auto) logFB("Menyimpan konfigurasi...", 'warn');
+
+        try {
+            if(fbAppWms) { fbAppWms.delete().then(() => { initFbApp(url, api, proj, appid, auto); }); } 
+            else { initFbApp(url, api, proj, appid, auto); }
+        } catch(e) { logFB("Gagal: "+e.message, 'err'); setBadge('badge-danger', 'Error'); }
+    }
+
+    function initFbApp(url, api, proj, appid, auto) {
+        fbAppWms = firebase.initializeApp({ apiKey: api, authDomain: proj+".firebaseapp.com", databaseURL: url, projectId: proj, appId: appid }, 'wms-app');
+        fbDbRef = fbAppWms.database().ref('wms_data'); // Root path khusus WMS
+        
+        fbDbRef.on('value', (snapshot) => {
+            let data = snapshot.val();
+            if(data) {
+                if(data.db) localStorage.setItem('wms_db', JSON.stringify(data.db));
+                if(data.racks) localStorage.setItem('wms_racks', JSON.stringify(data.racks));
+                if(data.products) localStorage.setItem('wms_products', JSON.stringify(data.products));
+                if(data.statuses) localStorage.setItem('wms_statuses', JSON.stringify(data.statuses));
+                renderDashboard(); populateDropdowns();
+            }
+            setBadge('badge-success', 'Cloud Aktif');
+            if(!auto) logFB("✅ Koneksi berhasil & Data tersinkronisasi!", 'ok');
+        }, (error) => {
+            logFB("❌ Gagal read: "+error.message, 'err');
+            setBadge('badge-danger', 'Cloud Error');
+        });
+
+        if(!auto) logFB("Menghubungkan ke Firebase...", 'info');
+    }
+
+    function tesKoneksi() {
+        if(!fbDbRef) { alert("Hubungkan ke Cloud terlebih dahulu!"); return; }
+        logFB("Melakukan tes koneksi...", 'info');
+        fbDbRef.child('.info/connected').once('value').then(snap => {
+            if(snap.val() === true) { logFB("✅ Tes Koneksi Berhasil! Online.", 'ok'); alert("Koneksi Cloud OK!"); }
+            else { logFB("⚠️ Tes Koneksi Gagal. Offline.", 'warn'); alert("Gagal terhubung ke Cloud."); }
+        }).catch(e => { logFB("❌ Error: "+e.message, 'err'); alert("Error koneksi: "+e.message); });
+    }
+
+    function putuskanCloud() {
+        if(fbAppWms) {
+            fbDbRef.off(); // Remove listener
+            fbAppWms.delete().then(() => {
+                fbAppWms = null; fbDbRef = null;
+                setBadge('badge-warning', 'Lokal');
+                logFB("Koneksi Cloud diputuskan.", 'warn');
+                alert("Koneksi Cloud berhasil diputuskan.");
+            }).catch(e => logFB("Gagal putuskan: "+e.message, 'err'));
+        } else { alert("Tidak ada koneksi Cloud yang aktif."); }
+    }
+
+    function syncToCloud() {
+        if(fbDbRef) {
+            let dataToSync = { db: getDb(), racks: getRacks(), products: getProducts(), statuses: getStatuses() };
+            fbDbRef.set(dataToSync).catch(e => console.error("Sync Error:", e));
+        }
+    }
+</script>
+</body>
+</html>
