@@ -99,6 +99,14 @@
         .scanner-zone{display:none; margin-top:15px; border-radius:12px; overflow:hidden; border:2px solid var(--card-border); background:#000;}
         .scanner-zone video{width:100%; border-radius:10px;}
 
+        /* Detail Grid Custom */
+        .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px}
+        .detail-label{color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px}
+        .detail-val{font-weight:600;color:var(--text-main)}
+        .detail-val.exp{color:#f87171}
+        .detail-full{grid-column:span 2}
+        .detail-val.mono{font-family:monospace;font-size:11px;word-break:break-all}
+
         @media(max-width:900px){nav{width:220px}main{margin-left:220px}.settings-grid{grid-template-columns:1fr}}
         @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}main{margin-left:60px}}
     </style>
@@ -152,7 +160,7 @@
         <!-- INBOUND VIEW -->
         <div id="wms-inbound" class="view">
             <div class="flex-row">
-                <div style="flex:0 0 400px">
+                <div style="flex:0 0 420px">
                     <div class="card"><h2><i class="fa fa-arrow-circle-down text-success"></i> Proses Inbound</h2>
                         
                         <div class="form-group">
@@ -163,9 +171,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label>2. Info Produk & Jumlah Box</label>
+                            <label>2. Info Produk & Nomor Box</label>
                             <select id="inProduct" class="mb-1"></select>
-                            <input type="number" id="inBoxQty" class="search-input" min="1" value="1" placeholder="Jumlah Box dalam 1 Pallet">
+                            <div class="flex-row items-center">
+                                <input type="number" id="inBoxStart" class="search-input" min="1" value="1" placeholder="Box Awal">
+                                <span class="text-muted fw-bold" style="font-size:18px">-</span>
+                                <input type="number" id="inBoxEnd" class="search-input" min="1" value="1" placeholder="Box Akhir">
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -184,7 +196,7 @@
                                 <button class="btn btn-primary btn-sm" onclick="toggleScanner('inRackScanner', 'camInRack', 'inRackSlot', 'QR_CODE')"><i class="fa fa-camera"></i></button>
                             </div>
                             <div id="camInRack" class="scanner-zone"></div>
-                            <small class="text-muted" style="font-size:10px; display:block; margin-top:5px">Data akan otomatis tersimpan saat lokasi valid terdeteksi.</small>
+                            <small class="text-muted" style="font-size:10px; display:block; margin-top:5px">Data otomatis masuk saat lokasi valid.</small>
                         </div>
                     </div>
                 </div>
@@ -195,11 +207,11 @@
         <!-- OUTBOUND VIEW -->
         <div id="wms-outbound" class="view">
             <div class="flex-row">
-                <div style="flex:0 0 400px">
-                    <div class="card"><h2>Outbound Scan</h2>
+                <div style="flex:0 0 420px">
+                    <div class="card"><h2><i class="fa fa-arrow-circle-up text-danger"></i> Proses Outbound</h2>
                         <div class="form-group"><label>1. Scan Barcode Barang</label><div class="flex-row items-center"><input type="text" id="outBarcode" class="scan-input" placeholder="Scan Barcode..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('outBarcodeScanner', 'camOutBc', 'outBarcode', 'BARCODE')"><i class="fa fa-camera"></i></button></div><div id="camOutBc" class="scanner-zone"></div></div>
                         <div id="outItemInfo" class="mb-2"></div>
-                        <div class="form-group d-none" id="outVerifyCard"><label>2. Scan Lokasi Rak.Slot (Misal: A.1a)</label><div class="flex-row items-center"><input type="text" id="outVerifyRackSlot" class="qr-input" placeholder="Scan QR Rak.Slot..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('outVerifyScanner', 'camOutVerify', 'outVerifyRackSlot', 'QR_CODE')"><i class="fa fa-camera"></i></button></div><div id="camOutVerify" class="scanner-zone"></div><div id="outVerifyResult" class="text-muted fw-bold mb-2" style="font-size:11px"></div></div>
+                        <div class="form-group d-none" id="outVerifyCard"><label>2. Scan / Input Lokasi Rak.Slot</label><div class="flex-row items-center"><input type="text" id="outVerifyRackSlot" class="qr-input" placeholder="Contoh: A.1a (Auto Submit)" style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('outVerifyScanner', 'camOutVerify', 'outVerifyRackSlot', 'QR_CODE')"><i class="fa fa-camera"></i></button></div><div id="camOutVerify" class="scanner-zone"></div><div id="outVerifyResult" class="text-muted fw-bold mb-2" style="font-size:11px"></div></div>
                     </div>
                 </div>
                 <div class="flex-1"><div class="card"><h2>Info Pengeluaran</h2><div id="outInfoPanel" class="text-center text-muted" style="padding:40px 0"><i class="fa fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div></div></div>
@@ -213,7 +225,7 @@
         <div id="wms-firebase" class="view">
             <div class="card fb-config-zone">
                 <h2><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Konfigurasi Cloud</h2>
-                <div class="info-banner">⚠️ Pastikan tidak ada <b>spasi</b> saat paste Database URL, API Key, dan App ID.</div>
+                <div class="info-banner" style="background:rgba(239,68,68,.05); color:#f87171; border-color:rgba(239,68,68,.2)">⚠️ PASTIKAN: Database URL harus menggunakan tanda hubung (-) tanpa spasi. Contoh: <b>loghouse-scm-default-rtdb</b> (Bukan loghouse - scm). API Key diawali <b>AIza</b> (Huruf I besar).</div>
                 <div class="form-group"><label>Database URL</label><input type="text" id="fb-url" placeholder="https://xxx-default-rtdb..."></div>
                 <div class="form-grid"><div class="form-group"><label>API Key</label><input type="text" id="fb-api" placeholder="AIzaSy..."></div><div class="form-group"><label>Project ID</label><input type="text" id="fb-project" placeholder="nama-project"></div></div>
                 <div class="form-group"><label>App ID</label><input type="text" id="fb-appid" placeholder="1:12345:web:abcde"></div>
@@ -259,12 +271,68 @@
     function showModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function populateDropdowns() { let prods=getProducts(),pH='<option value="">-- Pilih Produk --</option>';prods.forEach(p=>pH+=`<option value="${p.id}">${p.id} - ${p.name}</option>`);document.getElementById('inProduct').innerHTML=pH; }
     
-    // ================= INBOUND LOGIC =================
-    function parseBarcode(code) { if(!code||code.length<3) return null; try { return { type:code.charAt(0)==='P'?'Produksi':'Unknown', tower:code.charAt(1)==='A'?'Tower 1':'Tower 2', batch:code.substring(2,5), raw:code }; } catch(e) { return null; } }
+    // ================= PARSER LOGIC =================
+    function parseBarcode(code) { 
+        if(!code || code.length < 3) return null; 
+        
+        // Format Khusus Panjang (Produksi LOG-House)
+        // PA274/2612230062026D08614353006202630062028086
+        if(code.length >= 42 && (code.startsWith('PA') || code.startsWith('PB'))) {
+            let prefix = code.substring(0, 2);
+            let tower = prefix === 'PA' ? 'Tower 1' : 'Tower 2';
+            let batch = code.substring(2, 5);
+            let year = "20" + code.substring(6, 8);
+            
+            let pinFull = code.substring(8, 26);
+            let prodTime = pinFull.substring(pinFull.length - 4);
+            prodTime = prodTime.substring(0, 2) + ":" + prodTime.substring(2, 4);
+            
+            let prodDateRaw = code.substring(26, 34);
+            let prodDate = prodDateRaw.substring(0,2) + "-" + prodDateRaw.substring(2,4) + "-" + prodDateRaw.substring(4,8);
+            
+            let bestBeforeRaw = code.substring(34, 42);
+            let bestBefore = bestBeforeRaw.substring(0,2) + "-" + bestBeforeRaw.substring(2,4) + "-" + bestBeforeRaw.substring(4,8);
+            
+            return { 
+                type: 'Produksi LOG', 
+                tower: tower, 
+                batch: batch, 
+                pin: pinFull, 
+                prodDate: prodDate, 
+                prodTime: prodTime, 
+                bestBefore: bestBefore, 
+                raw: code 
+            };
+        }
+        
+        // Fallback format pendek umum
+        try { 
+            return { 
+                type: code.charAt(0)==='P'?'Produksi':'Generic', 
+                tower: code.charAt(1)==='A'?'Tower 1':'Tower 2', 
+                batch: code.substring(2,5), 
+                pin: '-', prodDate: '-', prodTime: '-', bestBefore: '-',
+                raw: code 
+            }; 
+        } catch(e) { return null; } 
+    }
     
-    document.getElementById('inBarcode').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); let p=parseBarcode(this.value); document.getElementById('inParsedInfo').innerHTML = p ? `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Tower: <b>${p.tower}</b>` : "<span class='text-danger'>Format barcode tidak dikenali</span>"; document.getElementById('inProduct').focus(); }});
+    document.getElementById('inBarcode').addEventListener('keypress', function(e) { 
+        if(e.key==='Enter'){ 
+            e.preventDefault(); 
+            let p = parseBarcode(this.value); 
+            if(p && p.pin !== '-') {
+                document.getElementById('inParsedInfo').innerHTML = `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Prod: <b>${p.prodDate} ${p.prodTime}</b> | Exp: <b class="text-danger">${p.bestBefore}</b>`;
+            } else if(p) {
+                document.getElementById('inParsedInfo').innerHTML = `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Tower: <b>${p.tower}</b>`;
+            } else {
+                document.getElementById('inParsedInfo').innerHTML = "<span class='text-danger'>Format tidak dikenali</span>";
+            }
+            document.getElementById('inProduct').focus(); 
+        }
+    });
     
-    // AUTO SUBMIT LOGIC for Inbound
+    // AUTO SUBMIT LOGIC
     document.getElementById('inRackSlot').addEventListener('input', function(e) {
         let val = this.value.trim().toUpperCase();
         if(val.includes('.')) {
@@ -273,20 +341,20 @@
                 let rackId = parts[0], slotId = parts[1].toLowerCase();
                 let racks = getRacks(), rackObj = racks.find(r => r.id === rackId);
                 if(rackObj && rackObj.slots.includes(slotId)) {
-                    submitInbound(rackId, slotId); // Auto-submit
+                    submitInbound(rackId, slotId); 
                 }
             }
         }
     });
 
-    function clearInboundForm() { document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inProduct').value=''; document.getElementById('inBoxQty').value=1; document.getElementById('inStatus').value='OK'; document.getElementById('inRackSlot').value=''; }
+    function clearInboundForm() { document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inProduct').value=''; document.getElementById('inBoxStart').value=1; document.getElementById('inBoxEnd').value=1; document.getElementById('inStatus').value='OK'; document.getElementById('inRackSlot').value=''; }
     
     function renderInboundVisual() {
         let val = document.getElementById('inRackSlot').value.trim().toUpperCase();
         let rackVal = val.split('.')[0];
         let db=getDb(), racks=getRacks().map(r=>r.id), selRack=racks.includes(rackVal)?rackVal:null;
         document.getElementById('inVisTitle').innerText = selRack ? `Rak ${selRack}` : 'Pilih Rak';
-        if(!selRack) { document.getElementById('inRackVisual').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-hand-pointer fa-3x mb-3"></i><br>Scan QR Rak.Slot.</div>'; return; }
+        if(!selRack) { document.getElementById('inRackVisual').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-hand-pointer fa-3x mb-3"></i><br>Scan QR Rak.</div>'; return; }
         if(!db[selRack]) db[selRack]={}; let html='', rackObj=getRacks().find(r=>r.id===selRack); if(!rackObj) return;
         let gs={}; rackObj.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O';if(!gs[rn])gs[rn]=[];gs[rn].push(s);});
         for(let rn in gs) { html+=`<div class="row-label mt-2">Baris ${rn}</div><div class="rack-grid-large">`; gs[rn].forEach(slot=>{ let items=db[selRack][slot]||[],isFull=items.length>=MAX_PALLET,sc=items.length===0?'slot-empty':(items.length<MAX_PALLET?'slot-partial':'slot-full'),pl=items.map(i=>`<span class="badge badge-info me-1 mb-1" style="font-size:9px">${i.pallet}</span>`).join(' '); html+=`<div class="rack-box-lg ${sc}" onclick="document.getElementById('inRackSlot').value='${selRack}.${slot}'"><strong>${selRack}.${slot}</strong> <span class="badge ${isFull?'badge-danger':'badge-success'}" style="font-size:9px">${items.length}/${MAX_PALLET}</span><div style="min-height:25px; margin-top:5px">${pl}</div></div>`; }); html+='</div>'; }
@@ -296,9 +364,11 @@
     function submitInbound(rackId, slotId) {
         let barcode = document.getElementById('inBarcode').value.trim();
         let productId = document.getElementById('inProduct').value;
-        let boxQty = parseInt(document.getElementById('inBoxQty').value) || 1;
+        let boxStart = parseInt(document.getElementById('inBoxStart').value) || 1;
+        let boxEnd = parseInt(document.getElementById('inBoxEnd').value) || boxStart;
         let status = document.getElementById('inStatus').value;
 
+        if(boxStart > boxEnd) { let temp = boxStart; boxStart = boxEnd; boxEnd = temp; }
         if(!barcode || !productId) { alert("Scan Barcode & Pilih Produk terlebih dahulu!"); return; }
         
         let db = getDb();
@@ -310,27 +380,26 @@
 
         let prodObj = getProducts().find(p => p.id === productId);
         let parsed = parseBarcode(barcode);
-        let palletId = 'PLT-' + Date.now().toString().slice(-6); // Generate 1 Pallet ID
+        let palletId = 'PLT-' + Date.now().toString().slice(-6); 
 
         currentItems.push({ 
-            barcode, 
-            pallet: palletId, 
-            boxQty: boxQty, 
-            productId, 
-            productName: prodObj ? prodObj.name : 'Unknown', 
-            status, 
+            barcode, pallet: palletId, boxStart, boxEnd, productId, 
+            productName: prodObj ? prodObj.name : 'Unknown', status, 
             batch: parsed ? parsed.batch : '-', 
-            unit: prodObj ? prodObj.unit : '-', 
-            weight: prodObj ? prodObj.weight : '-', 
+            pin: parsed ? parsed.pin : '-',
+            prodDate: parsed ? parsed.prodDate : '-',
+            prodTime: parsed ? parsed.prodTime : '-',
+            bestBefore: parsed ? parsed.bestBefore : '-',
+            unit: prodObj ? prodObj.unit : '-', weight: prodObj ? prodObj.weight : '-', 
             timestamp: new Date().toLocaleString('id-ID') 
         });
 
         saveDb(db); syncToCloud(); 
-        alert(`✅ Sukses! 1 Pallet (${palletId}) dengan ${boxQty} Box masuk ke ${rackId}.${slotId}`);
+        alert(`✅ Sukses! 1 Pallet (${palletId}) berisi Box No. ${boxStart} s/d ${boxEnd} masuk ke ${rackId}.${slotId}`);
         clearInboundForm(); renderInboundVisual(); renderDashboard();
     }
 
-    // ================= OUTBOUND LOGIC =================
+    // ================= OUTBOUND & DASHBOARD =================
     function renderDashboard() {
         let db=getDb(), racks=getRacks(), tP=0, tSU=0, fS=0, mH='<div class="flex-row" style="flex-wrap:wrap">';
         racks.forEach(ro=>{ let r=ro.id, rT=0, iRF=true, sH=''; if(!db[r])db[r]={}; let gs={}; ro.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O';if(!gs[rn])gs[rn]=[];gs[rn].push(s);});
@@ -339,7 +408,37 @@
         mH+='</div>'; saveDb(db); document.getElementById('dash-rack-map').innerHTML=mH; let tA=(racks.reduce((a,r)=>a+r.slots.length,0))-fS;
         document.getElementById('dash-total-pallet').innerText=tP; document.getElementById('dash-slot-used').innerText=tSU; document.getElementById('dash-slot-full').innerText=fS; document.getElementById('dash-slot-avail').innerText=tA;
     }
-    function showSlotDetail(rackId, slotId) { let db=getDb(), items=db[rackId]?db[rackId][slotId]||[]:[]; document.getElementById('slotDetailTitle').innerText=`Isi Slot: Rak ${rackId} - ${slotId}`; if(items.length===0){document.getElementById('slotDetailBody').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-box-open fa-3x mb-3"></i><br>Slot ini kosong.</div>';}else{let lH='';items.forEach(i=>{let sc=i.status==='OK'?'badge-success':(i.status==='HOLD'?'badge-warning':'badge-danger');lH+=`<div class="user-card" style="display:flex;justify-content:space-between;align-items:center"><div><strong class="text-primary">${i.productName}</strong><br><small>Pallet: <b>${i.pallet}</b> | Box: <b>${i.boxQty||1}</b></small></div><span class="badge ${sc}">${i.status}</span></div>`;});document.getElementById('slotDetailBody').innerHTML=lH;} showModal('slotDetailModal'); }
+    
+    function showSlotDetail(rackId, slotId) { 
+        let db=getDb(), items=db[rackId]?db[rackId][slotId]||[]:[]; 
+        document.getElementById('slotDetailTitle').innerText=`Isi Slot: Rak ${rackId} - ${slotId}`; 
+        if(items.length===0){
+            document.getElementById('slotDetailBody').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-box-open fa-3x mb-3"></i><br>Slot ini kosong.</div>';
+        } else {
+            let lH=''; 
+            items.forEach(i => {
+                let sc = i.status==='OK'?'badge-success':(i.status==='HOLD'?'badge-warning':'badge-danger');
+                let cartonNum = (i.boxStart && i.boxEnd) ? `${i.boxStart} - ${i.boxEnd}` : '-';
+                
+                lH += `<div class="user-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--card-border)">
+                        <div><strong style="font-size:15px" class="text-primary">${i.productName}</strong> <span class="badge ${sc}">${i.status}</span></div>
+                        <small style="color:var(--text-muted)">${i.pallet}</small>
+                    </div>
+                    <div class="detail-grid">
+                        <div><span class="detail-label">1. Nama Produk</span><span class="detail-val">${i.productName}</span></div>
+                        <div><span class="detail-label">2. Carton Number</span><span class="detail-val">${cartonNum}</span></div>
+                        <div><span class="detail-label">3. No Batch</span><span class="detail-val">${i.batch || '-'}</span></div>
+                        <div><span class="detail-label">4. Tanggal Produksi</span><span class="detail-val">${i.prodDate || '-'} <small style="color:var(--text-muted)">${i.prodTime || ''}</small></span></div>
+                        <div class="detail-full"><span class="detail-label">5. Product Identification Number</span><span class="detail-val mono">${i.pin || '-'}</span></div>
+                        <div class="detail-full"><span class="detail-label">6. Best Before</span><span class="detail-val exp">${i.bestBefore || '-'}</span></div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('slotDetailBody').innerHTML=lH; 
+        } 
+        showModal('slotDetailModal'); 
+    }
 
     function resetOutboundForm() { isProcessingOutbound=false; document.getElementById('outBarcode').value=''; document.getElementById('outItemInfo').innerHTML=''; document.getElementById('outVerifyCard').classList.add('d-none'); document.getElementById('outVerifyRackSlot').value=''; document.getElementById('outVerifyResult').innerHTML=''; currentOutboundData=null; document.getElementById('outInfoPanel').innerHTML='<div class="text-muted text-center" style="padding:40px 0"><i class="fas fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div>'; }
     document.getElementById('outBarcode').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); processOutboundScan(this.value); }});
@@ -350,9 +449,9 @@
         for(let ro of getRacks()){let r=ro.id;if(!db[r])continue;for(let s in db[r]){for(let i=0;i<db[r][s].length;i++){if(db[r][s][i].barcode===bc){f={rack:r,slot:s,index:i,data:db[r][s][i]};break;}}if(f)break;}if(f)break;}
         if(f){
             currentOutboundData=f; isProcessingOutbound=true;
-            document.getElementById('outItemInfo').innerHTML=`<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Produk: <b>${f.data.productName}</b> | Pallet: <b>${f.data.pallet}</b></div>`;
+            document.getElementById('outItemInfo').innerHTML=`<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Produk: <b>${f.data.productName}</b> | Box: <b>${f.data.boxStart||'?'}-${f.data.boxEnd||'?'}</b><br>Prod: ${f.data.prodDate||'-'} | Exp: <b class="text-danger">${f.data.bestBefore||'-'}</b></div>`;
             document.getElementById('outVerifyCard').classList.remove('d-none');
-            document.getElementById('outInfoPanel').innerHTML=`<h4 class="text-warning">Lokasi: <b>${f.rack}.${f.slot}</b></h4><p>Scan/verifikasi lokasi Rak.Slot yang persis sama.</p>`;
+            document.getElementById('outInfoPanel').innerHTML=`<h4 class="text-warning">Step 2: Scan/Verifikasi Lokasi</h4><p>Lokasi asal: <b>${f.rack}.${f.slot}</b></p>`;
             document.getElementById('outVerifyRackSlot').value='';
             document.getElementById('outVerifyRackSlot').focus();
         }else{alert("❌ Barang tidak ditemukan!");resetOutboundForm();}
@@ -397,7 +496,7 @@
     // ================= CAMERA SCANNER =================
     const activeScanners = {};
     function toggleScanner(scannerKey, elementId, targetInputId, type) { if (activeScanners[scannerKey] && activeScanners[scannerKey].isScanning) { stopScanner(scannerKey, elementId); } else { startScanner(scannerKey, elementId, targetInputId, type); } }
-    function startScanner(scannerKey, elementId, targetInputId, type) { const camEl=document.getElementById(elementId);camEl.style.display='block'; const config={fps:10,qrbox:{width:250,height:250}}; const formats=type==='QR_CODE'?[Html5QrcodeSupportedFormats.QR_CODE]:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.EAN_13]; const scanner=new Html5Qrcode(elementId,{formatsToSupport:formats}); activeScanners[scannerKey]=scanner; scanner.start({facingMode:"environment"},config,(decodedText)=>{document.getElementById(targetInputId).value=decodedText; let event=new Event('input');document.getElementById(targetInputId).dispatchEvent(event); if(targetInputId==='inBarcode'){let p=parseBarcode(decodedText);document.getElementById('inParsedInfo').innerHTML=p?`<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b>`:"<span class='text-danger'>Format salah</span>";} if(targetInputId==='outBarcode')processOutboundScan(decodedText); stopScanner(scannerKey,elementId); },(errorMessage)=>{}).catch(err=>{alert("Gagal akses kamera.\nError: "+err);camEl.style.display='none';}); }
+    function startScanner(scannerKey, elementId, targetInputId, type) { const camEl=document.getElementById(elementId);camEl.style.display='block'; const config={fps:10,qrbox:{width:250,height:250}}; const formats=type==='QR_CODE'?[Html5QrcodeSupportedFormats.QR_CODE]:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.EAN_13]; const scanner=new Html5Qrcode(elementId,{formatsToSupport:formats}); activeScanners[scannerKey]=scanner; scanner.start({facingMode:"environment"},config,(decodedText)=>{document.getElementById(targetInputId).value=decodedText; let event=new Event('input');document.getElementById(targetInputId).dispatchEvent(event); if(targetInputId==='inBarcode'){let p=parseBarcode(decodedText);if(p&&p.pin!=='-'){document.getElementById('inParsedInfo').innerHTML=`<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Prod: <b>${p.prodDate} ${p.prodTime}</b> | Exp: <b class="text-danger">${p.bestBefore}</b>`;}else if(p){document.getElementById('inParsedInfo').innerHTML=`<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b>`;}else{document.getElementById('inParsedInfo').innerHTML="<span class='text-danger'>Format salah</span>";}} if(targetInputId==='outBarcode')processOutboundScan(decodedText); stopScanner(scannerKey,elementId); },(errorMessage)=>{}).catch(err=>{alert("Gagal akses kamera.\nError: "+err);camEl.style.display='none';}); }
     function stopScanner(scannerKey, elementId) { if (activeScanners[scannerKey]) { activeScanners[scannerKey].stop().then(() => { document.getElementById(elementId).style.display = 'none'; delete activeScanners[scannerKey]; }).catch(err => {}); } }
     function stopAllScanners() { Object.keys(activeScanners).forEach(key => { let elId = key.includes('Rack') ? 'camInRack' : (key.includes('inB') ? 'camInBc' : (key.includes('Verify') ? 'camOutVerify' : 'camOutBc')); stopScanner(key, elId); }); }
 
@@ -409,18 +508,14 @@
     function loadCloudConfig() { let c=JSON.parse(localStorage.getItem('fb_config_wms')); if(c&&c.url){document.getElementById('fb-url').value=c.url;document.getElementById('fb-api').value=c.api;document.getElementById('fb-project').value=c.project;document.getElementById('fb-appid').value=c.appid||'';simpanHubungkan(true);} }
     
     function simpanHubungkan(auto=false) { 
-        // CLEAN SPACES HELPER - Memastikan tidak ada spasi yang bikin error koneksi
         let url=document.getElementById('fb-url').value.replace(/\s+/g, '');
         let api=document.getElementById('fb-api').value.replace(/\s+/g, '');
         let proj=document.getElementById('fb-project').value.replace(/\s+/g, '');
         let appid=document.getElementById('fb-appid').value.replace(/\s+/g, '');
-        
-        // Update input field visual
         document.getElementById('fb-url').value=url; document.getElementById('fb-api').value=api; document.getElementById('fb-project').value=proj; document.getElementById('fb-appid').value=appid;
-
         if(!url||!api||!proj){if(!auto)alert("Harap lengkapi URL, API Key, dan Project ID!");return;} 
         localStorage.setItem('fb_config_wms',JSON.stringify({url,api,project:proj,appid})); 
-        if(!auto)logFB("Menyimpan konfigurasi...",'warn'); 
+        if(!auto)logFB("Menyimpan konfigurasi (Spasi dihapus otomatis)...",'warn'); 
         try{if(fbAppWms){fbAppWms.delete().then(()=>{initFbApp(url,api,proj,appid,auto);});}else{initFbApp(url,api,proj,appid,auto);}}catch(e){logFB("Gagal: "+e.message,'err');setBadge('badge-danger','Error');} 
     }
     function initFbApp(url, api, proj, appid, auto) { 
@@ -441,7 +536,7 @@
         },(error)=>{logFB("❌ Gagal read: "+error.message,'err');setBadge('badge-danger','Cloud Error');}); 
         if(!auto)logFB("Menghubungkan ke Firebase...",'info'); 
     }
-    function tesKoneksi() { if(!fbDbRef){alert("Hubungkan ke Cloud dulu!");return;} logFB("Melakukan tes koneksi...",'info'); fbDbRef.child('.info/connected').once('value').then(snap=>{if(snap.val()===true){logFB("✅ Tes Koneksi Berhasil! Online.",'ok');alert("Koneksi Cloud OK!");}else{logFB("⚠️ Tes Koneksi Gagal. Offline.",'warn');alert("Gagal terhubung.");}}).catch(e=>{logFB("❌ Error: "+e.message,'err');alert("Error: "+e.message);}); }
+    function tesKoneksi() { if(!fbDbRef){alert("Hubungkan ke Cloud dulu!");return;} logFB("Melakukan tes koneksi...",'info'); fbDbRef.child('.info/connected').once('value').then(snap=>{if(snap.val()===true){logFB("✅ Tes Koneksi Berhasil! Online.",'ok');alert("Koneksi Cloud OK!");}else{logFB("⚠️ Tes Koneksi Gagal. Offline.",'warn');alert("Gagal terhubung. Cek kembali Database URL dan API Key.");}}).catch(e=>{logFB("❌ Error: "+e.message,'err');alert("Error: "+e.message);}); }
     function putuskanCloud() { if(fbAppWms){fbDbRef.off();fbAppWms.delete().then(()=>{fbAppWms=null;fbDbRef=null;setBadge('badge-warning','Lokal');logFB("Koneksi Cloud diputuskan.",'warn');alert("Koneksi diputuskan.");}).catch(e=>logFB("Gagal putuskan: "+e.message,'err'));}else{alert("Tidak ada koneksi Cloud.");} }
     function syncToCloud() { if(fbDbRef){let d={db:getDb(),racks:getRacks(),products:getProducts(),statuses:getStatuses(),users:getUsers()};fbDbRef.set(d).catch(e=>console.error("Sync Error:",e));} }
 </script>
