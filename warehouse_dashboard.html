@@ -99,13 +99,20 @@
         .scanner-zone{display:none; margin-top:15px; border-radius:12px; overflow:hidden; border:2px solid var(--card-border); background:#000;}
         .scanner-zone video{width:100%; border-radius:10px;}
 
-        /* Detail Grid Custom */
         .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px}
         .detail-label{color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px}
         .detail-val{font-weight:600;color:var(--text-main)}
         .detail-val.exp{color:#f87171}
         .detail-full{grid-column:span 2}
         .detail-val.mono{font-family:monospace;font-size:11px;word-break:break-all}
+
+        .plan-status-draft { border-left: 4px solid #fbbf24; }
+        .plan-status-loading { border-left: 4px solid #60a5fa; }
+        .plan-item { background: rgba(255,255,255,0.02); border:1px solid var(--card-border); border-radius:10px; padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; }
+        
+        /* Outbound Tabs */
+        .tab-btn { flex:1; justify-content:center; border-radius:0; background:rgba(255,255,255,0.02); color:var(--text-muted); border:1px solid var(--card-border); }
+        .tab-btn.active-tab { background: var(--gradient-primary); color:#fff; border-color:transparent; }
 
         @media(max-width:900px){nav{width:220px}main{margin-left:220px}.settings-grid{grid-template-columns:1fr}}
         @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}main{margin-left:60px}}
@@ -181,7 +188,12 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>3. Status Produk</label>
+                            <label>3. Nomor Pallet</label>
+                            <input type="text" id="inPalletNo" class="search-input" placeholder="Masukkan nomor pallet (Opsional)">
+                        </div>
+
+                        <div class="form-group">
+                            <label>4. Status Produk</label>
                             <select id="inStatus">
                                 <option value="OK" selected>OK</option>
                                 <option value="HOLD">HOLD</option>
@@ -190,7 +202,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label>4. Scan / Input Lokasi Rak.Slot</label>
+                            <label>5. Scan / Input Lokasi Rak.Slot</label>
                             <div class="flex-row items-center">
                                 <input type="text" id="inRackSlot" class="qr-input" placeholder="Contoh: A.1a (Auto Submit)" style="flex:1">
                                 <button class="btn btn-primary btn-sm" onclick="toggleScanner('inRackScanner', 'camInRack', 'inRackSlot', 'QR_CODE')"><i class="fa fa-camera"></i></button>
@@ -206,15 +218,113 @@
 
         <!-- OUTBOUND VIEW -->
         <div id="wms-outbound" class="view">
-            <div class="flex-row">
+            <div class="flex-row mb-2" style="margin-top:-10px;">
+                <button class="btn tab-btn active-tab" id="tabPlan" onclick="toggleOutboundMode('plan')"><i class="fa fa-truck"></i> Plan Kirim</button>
+                <button class="btn tab-btn" id="tabSingle" onclick="toggleOutboundMode('single')"><i class="fa fa-box"></i> Satuan (Pindah/Keluar)</button>
+            </div>
+
+            <!-- MODE PLAN -->
+            <div id="outbound-mode-plan" class="flex-row">
                 <div style="flex:0 0 420px">
-                    <div class="card"><h2><i class="fa fa-arrow-circle-up text-danger"></i> Proses Outbound</h2>
-                        <div class="form-group"><label>1. Scan Barcode Barang</label><div class="flex-row items-center"><input type="text" id="outBarcode" class="scan-input" placeholder="Scan Barcode..." style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('outBarcodeScanner', 'camOutBc', 'outBarcode', 'BARCODE')"><i class="fa fa-camera"></i></button></div><div id="camOutBc" class="scanner-zone"></div></div>
-                        <div id="outItemInfo" class="mb-2"></div>
-                        <div class="form-group d-none" id="outVerifyCard"><label>2. Scan / Input Lokasi Rak.Slot</label><div class="flex-row items-center"><input type="text" id="outVerifyRackSlot" class="qr-input" placeholder="Contoh: A.1a (Auto Submit)" style="flex:1"><button class="btn btn-primary btn-sm" onclick="toggleScanner('outVerifyScanner', 'camOutVerify', 'outVerifyRackSlot', 'QR_CODE')"><i class="fa fa-camera"></i></button></div><div id="camOutVerify" class="scanner-zone"></div><div id="outVerifyResult" class="text-muted fw-bold mb-2" style="font-size:11px"></div></div>
+                    <div class="card plan-status-draft">
+                        <h2><i class="fa fa-truck text-warning"></i> Outbound Plan</h2>
+                        
+                        <div class="form-group">
+                            <label>Buat Plan Baru</label>
+                            <input type="text" id="planDestination" placeholder="Tujuan (misal: SJA Semarang)">
+                            <input type="datetime-local" id="planDate" style="margin-top:10px">
+                            <button class="btn btn-primary w-full mt-1" onclick="createOutboundPlan()"><i class="fa fa-plus"></i> Buat Plan & Mulai Scan</button>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Pilih Plan Draft</label>
+                            <select id="selectPlanDraft" onchange="loadPlan(this.value)"></select>
+                        </div>
+
+                        <hr style="border-color:var(--card-border)">
+
+                        <div id="activePlanScanning" class="d-none">
+                            <h3 class="text-primary" id="activePlanTitle">Plan: -</h3>
+                            
+                            <div id="scanDraftPhase">
+                                <div class="form-group">
+                                    <label>1. Scan QR Produk</label>
+                                    <input type="text" id="planProdScan" class="scan-input" placeholder="Scan QR Produk...">
+                                </div>
+                                <div class="form-group">
+                                    <label>2. Scan QR Rak</label>
+                                    <input type="text" id="planRackScan" class="qr-input" placeholder="Scan QR Rak...">
+                                </div>
+                                <div class="flex-row">
+                                    <button class="btn btn-warning" onclick="savePlanAsDraft()"><i class="fa fa-save"></i> Simpan Draft</button>
+                                    <button class="btn btn-primary" onclick="startLoadingProcess()"><i class="fa fa-truck-loading"></i> Proses Muat</button>
+                                </div>
+                            </div>
+
+                            <div id="scanLoadingPhase" class="d-none">
+                                <div class="info-banner" style="background:rgba(96,165,250,.1); border-color:rgba(96,165,250,.2); color:#60a5fa">
+                                    <i class="fa fa-truck-loading"></i> <b>Proses Muat:</b> Scan barcode produk satu per satu.
+                                </div>
+                                <div class="form-group mt-2">
+                                    <label>Scan Barcode Muat</label>
+                                    <input type="text" id="loadProdScan" class="scan-input" placeholder="Scan Barcode Produk...">
+                                </div>
+                                <button class="btn btn-primary mt-1" onclick="verifyQC()"><i class="fa fa-check-circle"></i> Verifikasi QC</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="flex-1"><div class="card"><h2>Info Pengeluaran</h2><div id="outInfoPanel" class="text-center text-muted" style="padding:40px 0"><i class="fa fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div></div></div>
+                <div class="flex-1">
+                    <div class="card">
+                        <div class="flex-row justify-between items-center mb-1">
+                            <h2 id="planListTitle">Item di Plan (0)</h2>
+                            <span id="planStatusBadge" class="badge badge-warning">DRAFT</span>
+                        </div>
+                        <div id="planItemListContainer">
+                            <div class="text-center text-muted p-5"><i class="fas fa-clipboard-list fa-3x mb-3"></i><br>Buat plan baru atau pilih draft.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODE SATUAN -->
+            <div id="outbound-mode-single" class="d-none">
+                <div class="flex-row">
+                    <div style="flex:0 0 420px">
+                        <div class="card" style="border-left: 4px solid #34d399;">
+                            <h2><i class="fa fa-exchange-alt text-success"></i> Outbound Satuan</h2>
+                            
+                            <div class="form-group">
+                                <label>1. Scan Barcode Produk</label>
+                                <input type="text" id="singleBarcodeScan" class="scan-input" placeholder="Scan barcode produk...">
+                                <div id="singleItemInfo" class="text-primary fw-bold mb-2 mt-1" style="font-size:11px"></div>
+                            </div>
+
+                            <div id="singleActions" class="d-none">
+                                <label>2. Pilih Aksi</label>
+                                <div class="flex-row mb-1">
+                                    <button class="btn btn-success flex-1" onclick="showSingleTransfer()"><i class="fa fa-exchange-alt"></i> Pindah Rak</button>
+                                    <button class="btn btn-danger flex-1" onclick="singleItemOut()"><i class="fa fa-sign-out-alt"></i> Keluar Gudang</button>
+                                </div>
+
+                                <div id="singleTransferForm" class="d-none mt-2">
+                                    <label>3. Scan Lokasi Rak Tujuan Baru</label>
+                                    <input type="text" id="singleNewRackSlot" class="qr-input" placeholder="Scan QR Rak Tujuan (Contoh: B.2a)">
+                                    <small class="text-muted" style="font-size:10px; display:block; margin-top:5px">Item akan otomatis dipindahkan saat rak valid.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="card">
+                            <h2>Panduan Satuan</h2>
+                            <div class="info-banner">
+                                <b>Pindah Rak:</b> Gunakan fitur ini untuk merelokasi barang dari satu slot ke slot lainnya.<br>
+                                <b>Keluar Gudang:</b> Gunakan fitur ini jika barang dikeluarkan tanpa melalui proses Plan/Kirim.
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -225,7 +335,7 @@
         <div id="wms-firebase" class="view">
             <div class="card fb-config-zone">
                 <h2><i class="fa-solid fa-cloud-arrow-up text-primary"></i> Konfigurasi Cloud</h2>
-                <div class="info-banner" style="background:rgba(239,68,68,.05); color:#f87171; border-color:rgba(239,68,68,.2)">⚠️ PASTIKAN: Database URL harus menggunakan tanda hubung (-) tanpa spasi. Contoh: <b>loghouse-scm-default-rtdb</b> (Bukan loghouse - scm). API Key diawali <b>AIza</b> (Huruf I besar).</div>
+                <div class="info-banner" style="background:rgba(239,68,68,.05); color:#f87171; border-color:rgba(239,68,68,.2)">⚠️ PASTIKAN: Database URL harus menggunakan tanda hubung (-) tanpa spasi. API Key diawali <b>AIza</b> (Huruf I besar).</div>
                 <div class="form-group"><label>Database URL</label><input type="text" id="fb-url" placeholder="https://xxx-default-rtdb..."></div>
                 <div class="form-grid"><div class="form-group"><label>API Key</label><input type="text" id="fb-api" placeholder="AIzaSy..."></div><div class="form-group"><label>Project ID</label><input type="text" id="fb-project" placeholder="nama-project"></div></div>
                 <div class="form-group"><label>App ID</label><input type="text" id="fb-appid" placeholder="1:12345:web:abcde"></div>
@@ -233,6 +343,7 @@
                     <button class="btn btn-success" onclick="simpanHubungkan()"><i class="fa fa-cloud-arrow-up"></i> Simpan & Hubungkan</button>
                     <button class="btn btn-primary" onclick="tesKoneksi()"><i class="fa fa-plug"></i> Tes Koneksi</button>
                     <button class="btn btn-danger" onclick="putuskanCloud()"><i class="fa fa-cloud-arrow-down"></i> Putuskan</button>
+                    <button class="btn btn-warning" onclick="migrateOldData()"><i class="fa fa-sync-alt"></i> Revisi Data Lama</button>
                 </div>
                 <div id="fb-log" class="fb-log d-none mt-2"></div>
             </div>
@@ -258,100 +369,54 @@
     if(!localStorage.getItem('wms_products')) localStorage.setItem('wms_products', JSON.stringify([ {id:'IC01', name:'Instant Coffee 200g', unit:'Karton', weight:'5.5'}, {id:'IC02', name:'Instant Coffee 500g', unit:'Karton', weight:'8.0'} ]));
     if(!localStorage.getItem('wms_racks')) { let iR=[]; ['A','B','C','D','E','F','G','H','I','J'].forEach(r => iR.push({ id: r, product: 'Instant Coffee', slots: genDefSlots() })); localStorage.setItem('wms_racks', JSON.stringify(iR)); }
     if(!localStorage.getItem('wms_db')) { let iDb = {}; ['A','B','C','D','E','F','G','H','I','J'].forEach(r => iDb[r] = {}); localStorage.setItem('wms_db', JSON.stringify(iDb)); }
+    if(!localStorage.getItem('wms_plans')) localStorage.setItem('wms_plans', JSON.stringify([]));
+    
     function genDefSlots() { let s=[]; for(let r=1; r<=4; r++) { for(let c of ['a','b','c','d','e','f','g','h','i','j','k','l','m']) { s.push(r+c); } } return s; }
     const getStatuses = () => JSON.parse(localStorage.getItem('wms_statuses')); const saveStatuses = (s) => localStorage.setItem('wms_statuses', JSON.stringify(s));
     const getProducts = () => JSON.parse(localStorage.getItem('wms_products')); const saveProducts = (p) => localStorage.setItem('wms_products', JSON.stringify(p));
     const getRacks = () => JSON.parse(localStorage.getItem('wms_racks')); const saveRacks = (r) => localStorage.setItem('wms_racks', JSON.stringify(r));
     const getDb = () => JSON.parse(localStorage.getItem('wms_db')); const saveDb = (db) => localStorage.setItem('wms_db', JSON.stringify(db));
+    const getPlans = () => JSON.parse(localStorage.getItem('wms_plans')); const savePlans = (p) => localStorage.setItem('wms_plans', JSON.stringify(p));
 
-    let currentOutboundData = null, isProcessingOutbound = false;
+    let activePlanId = null, tempPlanProduct = null, tempSingleItem = null;
 
     function initWMS() { document.getElementById('user-badge-wms').innerHTML=`<i class="fa fa-user"></i> ${currentUser.username.toUpperCase()} (${currentUser.role})`; document.querySelectorAll('#sidebar-wms .spv-only').forEach(el=>el.style.display=currentUser.role==='SPV'?'flex':'none'); populateDropdowns(); loadCloudConfig(); showView('wms-dashboard', document.querySelector('#sidebar-wms .nav-item')); }
-    function showView(viewId, el) { stopAllScanners(); document.querySelectorAll('#main-wms .view').forEach(v=>v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); document.querySelectorAll('#sidebar-wms .nav-item').forEach(n=>n.classList.remove('active')); if(el)el.classList.add('active'); if(viewId==='wms-dashboard')renderDashboard();if(viewId==='wms-inbound'){clearInboundForm();renderInboundVisual();}if(viewId==='wms-outbound')resetOutboundForm();if(viewId==='wms-rack')renderRackTable();if(viewId==='wms-product')renderProductTable();if(viewId==='wms-status')renderStatusTable();if(viewId==='wms-settings')renderUserList(); }
+    function showView(viewId, el) { stopAllScanners(); document.querySelectorAll('#main-wms .view').forEach(v=>v.classList.remove('active')); document.getElementById(viewId).classList.add('active'); document.querySelectorAll('#sidebar-wms .nav-item').forEach(n=>n.classList.remove('active')); if(el)el.classList.add('active'); document.getElementById('wms-view-title').innerText = el ? el.querySelector('span').innerText : 'Dashboard'; if(viewId==='wms-dashboard')renderDashboard();if(viewId==='wms-inbound'){clearInboundForm();renderInboundVisual();}if(viewId==='wms-outbound'){resetOutboundView();}if(viewId==='wms-rack')renderRackTable();if(viewId==='wms-product')renderProductTable();if(viewId==='wms-status')renderStatusTable();if(viewId==='wms-settings')renderUserList(); }
     function showModal(id) { document.getElementById(id).style.display = 'flex'; } function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function populateDropdowns() { let prods=getProducts(),pH='<option value="">-- Pilih Produk --</option>';prods.forEach(p=>pH+=`<option value="${p.id}">${p.id} - ${p.name}</option>`);document.getElementById('inProduct').innerHTML=pH; }
     
     // ================= PARSER LOGIC =================
     function parseBarcode(code) { 
         if(!code || code.length < 3) return null; 
-        
-        // Format Khusus Panjang (Produksi LOG-House)
-        // PA274/2612230062026D08614353006202630062028086
-        if(code.length >= 42 && (code.startsWith('PA') || code.startsWith('PB'))) {
-            let prefix = code.substring(0, 2);
-            let tower = prefix === 'PA' ? 'Tower 1' : 'Tower 2';
-            let batch = code.substring(2, 5);
-            let year = "20" + code.substring(6, 8);
-            
-            let pinFull = code.substring(8, 26);
-            let prodTime = pinFull.substring(pinFull.length - 4);
-            prodTime = prodTime.substring(0, 2) + ":" + prodTime.substring(2, 4);
-            
-            let prodDateRaw = code.substring(26, 34);
-            let prodDate = prodDateRaw.substring(0,2) + "-" + prodDateRaw.substring(2,4) + "-" + prodDateRaw.substring(4,8);
-            
-            let bestBeforeRaw = code.substring(34, 42);
-            let bestBefore = bestBeforeRaw.substring(0,2) + "-" + bestBeforeRaw.substring(2,4) + "-" + bestBeforeRaw.substring(4,8);
-            
-            return { 
-                type: 'Produksi LOG', 
-                tower: tower, 
-                batch: batch, 
-                pin: pinFull, 
-                prodDate: prodDate, 
-                prodTime: prodTime, 
-                bestBefore: bestBefore, 
-                raw: code 
-            };
+        let result = { type: 'Generic', tower: '-', batch: '-', pin: '-', prodDate: '-', prodTime: '-', bestBefore: '-', cartonNo: '-', raw: code };
+        const strictRegex = /^(PA|PB)(\d{3})(\/\d{2})(\d+?)(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[012])(\d{4})(D\d{3})([01][0-9]|2[0-3])([0-5][0-9])(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[012])(\d{4})(0[1-9]|[12][0-9]|3[01])(0[1-9]|1[012])(\d{4})(\d{3})$/;
+        let match = code.match(strictRegex);
+        if (match) {
+            result.type = 'Produksi LOG'; result.tower = match[1] === 'PA' ? 'Tower 1' : 'Tower 2'; result.batch = match[2] + match[3]; result.pin = match[4];
+            result.prodDate = `${match[5]}-${match[6]}-${match[7]}`; result.cartonNo = match[8]; result.prodTime = `${match[9]}:${match[10]}`;
+            result.bestBefore = `${match[14]}-${match[15]}-${match[16]}`; return result;
         }
-        
-        // Fallback format pendek umum
-        try { 
-            return { 
-                type: code.charAt(0)==='P'?'Produksi':'Generic', 
-                tower: code.charAt(1)==='A'?'Tower 1':'Tower 2', 
-                batch: code.substring(2,5), 
-                pin: '-', prodDate: '-', prodTime: '-', bestBefore: '-',
-                raw: code 
-            }; 
-        } catch(e) { return null; } 
+        if(code.startsWith('PA') || code.startsWith('PB')) { result.type = 'Produksi LOG'; result.tower = code.startsWith('PA') ? 'Tower 1' : 'Tower 2'; result.batch = code.substring(2, 5); }
+        return result;
     }
     
     document.getElementById('inBarcode').addEventListener('keypress', function(e) { 
-        if(e.key==='Enter'){ 
-            e.preventDefault(); 
-            let p = parseBarcode(this.value); 
-            if(p && p.pin !== '-') {
-                document.getElementById('inParsedInfo').innerHTML = `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Prod: <b>${p.prodDate} ${p.prodTime}</b> | Exp: <b class="text-danger">${p.bestBefore}</b>`;
-            } else if(p) {
-                document.getElementById('inParsedInfo').innerHTML = `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Tower: <b>${p.tower}</b>`;
-            } else {
-                document.getElementById('inParsedInfo').innerHTML = "<span class='text-danger'>Format tidak dikenali</span>";
-            }
+        if(e.key==='Enter'){ e.preventDefault(); let p = parseBarcode(this.value); 
+            if(p && p.prodDate !== '-') document.getElementById('inParsedInfo').innerHTML = `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Prod: <b>${p.prodDate} ${p.prodTime}</b> | Exp: <b class="text-danger">${p.bestBefore}</b><br>PIN: <small class="text-muted">${p.pin}</small> | Karton: <b>${p.cartonNo || '-'}</b>`;
+            else if(p) document.getElementById('inParsedInfo').innerHTML = `<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Tower: <b>${p.tower}</b>`;
+            else document.getElementById('inParsedInfo').innerHTML = "<span class='text-danger'>Format tidak dikenali</span>";
             document.getElementById('inProduct').focus(); 
         }
     });
     
-    // AUTO SUBMIT LOGIC
+    // INBOUND LOGIC
     document.getElementById('inRackSlot').addEventListener('input', function(e) {
         let val = this.value.trim().toUpperCase();
-        if(val.includes('.')) {
-            let parts = val.split('.');
-            if(parts.length === 2 && parts[1].length > 0) {
-                let rackId = parts[0], slotId = parts[1].toLowerCase();
-                let racks = getRacks(), rackObj = racks.find(r => r.id === rackId);
-                if(rackObj && rackObj.slots.includes(slotId)) {
-                    submitInbound(rackId, slotId); 
-                }
-            }
-        }
+        if(val.includes('.')) { let parts = val.split('.'); if(parts.length === 2 && parts[1].length > 0) { let rackId = parts[0], slotId = parts[1].toLowerCase(); let racks = getRacks(), rackObj = racks.find(r => r.id === rackId); if(rackObj && rackObj.slots.includes(slotId)) submitInbound(rackId, slotId); } }
     });
-
-    function clearInboundForm() { document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inProduct').value=''; document.getElementById('inBoxStart').value=1; document.getElementById('inBoxEnd').value=1; document.getElementById('inStatus').value='OK'; document.getElementById('inRackSlot').value=''; }
-    
+    function clearInboundForm() { document.getElementById('inBarcode').value=''; document.getElementById('inParsedInfo').innerHTML=''; document.getElementById('inProduct').value=''; document.getElementById('inBoxStart').value=1; document.getElementById('inBoxEnd').value=1; document.getElementById('inPalletNo').value=''; document.getElementById('inStatus').value='OK'; document.getElementById('inRackSlot').value=''; }
     function renderInboundVisual() {
-        let val = document.getElementById('inRackSlot').value.trim().toUpperCase();
-        let rackVal = val.split('.')[0];
+        let val = document.getElementById('inRackSlot').value.trim().toUpperCase(); let rackVal = val.split('.')[0];
         let db=getDb(), racks=getRacks().map(r=>r.id), selRack=racks.includes(rackVal)?rackVal:null;
         document.getElementById('inVisTitle').innerText = selRack ? `Rak ${selRack}` : 'Pilih Rak';
         if(!selRack) { document.getElementById('inRackVisual').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-hand-pointer fa-3x mb-3"></i><br>Scan QR Rak.</div>'; return; }
@@ -360,118 +425,115 @@
         for(let rn in gs) { html+=`<div class="row-label mt-2">Baris ${rn}</div><div class="rack-grid-large">`; gs[rn].forEach(slot=>{ let items=db[selRack][slot]||[],isFull=items.length>=MAX_PALLET,sc=items.length===0?'slot-empty':(items.length<MAX_PALLET?'slot-partial':'slot-full'),pl=items.map(i=>`<span class="badge badge-info me-1 mb-1" style="font-size:9px">${i.pallet}</span>`).join(' '); html+=`<div class="rack-box-lg ${sc}" onclick="document.getElementById('inRackSlot').value='${selRack}.${slot}'"><strong>${selRack}.${slot}</strong> <span class="badge ${isFull?'badge-danger':'badge-success'}" style="font-size:9px">${items.length}/${MAX_PALLET}</span><div style="min-height:25px; margin-top:5px">${pl}</div></div>`; }); html+='</div>'; }
         document.getElementById('inRackVisual').innerHTML=html;
     }
-
     function submitInbound(rackId, slotId) {
-        let barcode = document.getElementById('inBarcode').value.trim();
-        let productId = document.getElementById('inProduct').value;
-        let boxStart = parseInt(document.getElementById('inBoxStart').value) || 1;
-        let boxEnd = parseInt(document.getElementById('inBoxEnd').value) || boxStart;
-        let status = document.getElementById('inStatus').value;
-
+        let barcode = document.getElementById('inBarcode').value.trim(); let productId = document.getElementById('inProduct').value;
+        let boxStart = parseInt(document.getElementById('inBoxStart').value) || 1; let boxEnd = parseInt(document.getElementById('inBoxEnd').value) || boxStart;
+        let palletNo = document.getElementById('inPalletNo').value.trim(); let status = document.getElementById('inStatus').value;
         if(boxStart > boxEnd) { let temp = boxStart; boxStart = boxEnd; boxEnd = temp; }
         if(!barcode || !productId) { alert("Scan Barcode & Pilih Produk terlebih dahulu!"); return; }
-        
-        let db = getDb();
-        if(!db[rackId]) db[rackId] = {};
-        if(!db[rackId][slotId]) db[rackId][slotId] = [];
-        
-        let currentItems = db[rackId][slotId];
-        if(currentItems.length >= MAX_PALLET) { alert(`Slot ${rackId}.${slotId} PENUH! (Max ${MAX_PALLET} Pallet)`); return; }
-
-        let prodObj = getProducts().find(p => p.id === productId);
-        let parsed = parseBarcode(barcode);
-        let palletId = 'PLT-' + Date.now().toString().slice(-6); 
-
-        currentItems.push({ 
-            barcode, pallet: palletId, boxStart, boxEnd, productId, 
-            productName: prodObj ? prodObj.name : 'Unknown', status, 
-            batch: parsed ? parsed.batch : '-', 
-            pin: parsed ? parsed.pin : '-',
-            prodDate: parsed ? parsed.prodDate : '-',
-            prodTime: parsed ? parsed.prodTime : '-',
-            bestBefore: parsed ? parsed.bestBefore : '-',
-            unit: prodObj ? prodObj.unit : '-', weight: prodObj ? prodObj.weight : '-', 
-            timestamp: new Date().toLocaleString('id-ID') 
-        });
-
-        saveDb(db); syncToCloud(); 
-        alert(`✅ Sukses! 1 Pallet (${palletId}) berisi Box No. ${boxStart} s/d ${boxEnd} masuk ke ${rackId}.${slotId}`);
+        let db = getDb(); if(!db[rackId]) db[rackId] = {}; if(!db[rackId][slotId]) db[rackId][slotId] = [];
+        let currentItems = db[rackId][slotId]; if(currentItems.length >= MAX_PALLET) { alert(`Slot ${rackId}.${slotId} PENUH!`); return; }
+        let prodObj = getProducts().find(p => p.id === productId); let parsed = parseBarcode(barcode); let palletId = palletNo || 'PLT-' + Date.now().toString().slice(-6); 
+        currentItems.push({ barcode, pallet: palletId, boxStart, boxEnd, productId, productName: prodObj ? prodObj.name : 'Unknown', status, batch: parsed ? parsed.batch : '-', pin: parsed ? parsed.pin : '-', prodDate: parsed ? parsed.prodDate : '-', prodTime: parsed ? parsed.prodTime : '-', bestBefore: parsed ? parsed.bestBefore : '-', cartonNo: parsed ? parsed.cartonNo : '-', unit: prodObj ? prodObj.unit : '-', weight: prodObj ? prodObj.weight : '-', timestamp: new Date().toLocaleString('id-ID') });
+        saveDb(db); syncToCloud(); alert(`✅ Sukses! Pallet ${palletId} masuk ke ${rackId}.${slotId}`);
         clearInboundForm(); renderInboundVisual(); renderDashboard();
     }
 
-    // ================= OUTBOUND & DASHBOARD =================
-    function renderDashboard() {
-        let db=getDb(), racks=getRacks(), tP=0, tSU=0, fS=0, mH='<div class="flex-row" style="flex-wrap:wrap">';
-        racks.forEach(ro=>{ let r=ro.id, rT=0, iRF=true, sH=''; if(!db[r])db[r]={}; let gs={}; ro.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O';if(!gs[rn])gs[rn]=[];gs[rn].push(s);});
-        for(let rn in gs){gs[rn].forEach(slot=>{let it=db[r][slot]||[];rT+=it.length;let sc=it.length===0?'slot-empty':(it.length<MAX_PALLET?'slot-partial':'slot-full');if(it.length<MAX_PALLET)iRF=false;if(it.length>=MAX_PALLET)fS++;if(it.length>0)tSU++;let pb=it.length>0?`<div class="product-badge">${(it[0].productName||'').substring(0,5)}</div>`:'';sH+=`<div class="rack-box ${sc}" onclick="showSlotDetail('${r}','${slot}')">${slot} ${pb}</div>`;});}
-        tP+=rT; mH+=`<div style="flex:1;min-width:250px;margin-bottom:20px"><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between"><strong>RAK ${r}</strong><span class="badge badge-info">${ro.product}</span><span class="badge badge-warning">${rT} Pallet</span></div><div style="padding:15px" class="rack-grid">${sH}</div></div></div>`;});
-        mH+='</div>'; saveDb(db); document.getElementById('dash-rack-map').innerHTML=mH; let tA=(racks.reduce((a,r)=>a+r.slots.length,0))-fS;
-        document.getElementById('dash-total-pallet').innerText=tP; document.getElementById('dash-slot-used').innerText=tSU; document.getElementById('dash-slot-full').innerText=fS; document.getElementById('dash-slot-avail').innerText=tA;
-    }
-    
-    function showSlotDetail(rackId, slotId) { 
-        let db=getDb(), items=db[rackId]?db[rackId][slotId]||[]:[]; 
-        document.getElementById('slotDetailTitle').innerText=`Isi Slot: Rak ${rackId} - ${slotId}`; 
-        if(items.length===0){
-            document.getElementById('slotDetailBody').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-box-open fa-3x mb-3"></i><br>Slot ini kosong.</div>';
-        } else {
-            let lH=''; 
-            items.forEach(i => {
-                let sc = i.status==='OK'?'badge-success':(i.status==='HOLD'?'badge-warning':'badge-danger');
-                let cartonNum = (i.boxStart && i.boxEnd) ? `${i.boxStart} - ${i.boxEnd}` : '-';
-                
-                lH += `<div class="user-card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--card-border)">
-                        <div><strong style="font-size:15px" class="text-primary">${i.productName}</strong> <span class="badge ${sc}">${i.status}</span></div>
-                        <small style="color:var(--text-muted)">${i.pallet}</small>
-                    </div>
-                    <div class="detail-grid">
-                        <div><span class="detail-label">1. Nama Produk</span><span class="detail-val">${i.productName}</span></div>
-                        <div><span class="detail-label">2. Carton Number</span><span class="detail-val">${cartonNum}</span></div>
-                        <div><span class="detail-label">3. No Batch</span><span class="detail-val">${i.batch || '-'}</span></div>
-                        <div><span class="detail-label">4. Tanggal Produksi</span><span class="detail-val">${i.prodDate || '-'} <small style="color:var(--text-muted)">${i.prodTime || ''}</small></span></div>
-                        <div class="detail-full"><span class="detail-label">5. Product Identification Number</span><span class="detail-val mono">${i.pin || '-'}</span></div>
-                        <div class="detail-full"><span class="detail-label">6. Best Before</span><span class="detail-val exp">${i.bestBefore || '-'}</span></div>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('slotDetailBody').innerHTML=lH; 
-        } 
-        showModal('slotDetailModal'); 
+    // ================= OUTBOUND LOGIC =================
+    function toggleOutboundMode(mode) {
+        document.getElementById('outbound-mode-plan').classList.toggle('d-none', mode !== 'plan');
+        document.getElementById('outbound-mode-single').classList.toggle('d-none', mode !== 'single');
+        document.getElementById('tabPlan').classList.toggle('active-tab', mode === 'plan');
+        document.getElementById('tabSingle').classList.toggle('active-tab', mode === 'single');
+        if(mode === 'single') resetSingleOutbound();
+        if(mode === 'plan') resetOutboundView();
     }
 
-    function resetOutboundForm() { isProcessingOutbound=false; document.getElementById('outBarcode').value=''; document.getElementById('outItemInfo').innerHTML=''; document.getElementById('outVerifyCard').classList.add('d-none'); document.getElementById('outVerifyRackSlot').value=''; document.getElementById('outVerifyResult').innerHTML=''; currentOutboundData=null; document.getElementById('outInfoPanel').innerHTML='<div class="text-muted text-center" style="padding:40px 0"><i class="fas fa-box-open fa-3x mb-2"></i><br>Scan barcode barang</div>'; }
-    document.getElementById('outBarcode').addEventListener('keypress', function(e) { if(e.key==='Enter'){ e.preventDefault(); processOutboundScan(this.value); }});
-    
-    function processOutboundScan(bc) {
-        if(isProcessingOutbound) return;
-        let db=getDb(), f=null; 
-        for(let ro of getRacks()){let r=ro.id;if(!db[r])continue;for(let s in db[r]){for(let i=0;i<db[r][s].length;i++){if(db[r][s][i].barcode===bc){f={rack:r,slot:s,index:i,data:db[r][s][i]};break;}}if(f)break;}if(f)break;}
-        if(f){
-            currentOutboundData=f; isProcessingOutbound=true;
-            document.getElementById('outItemInfo').innerHTML=`<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Produk: <b>${f.data.productName}</b> | Box: <b>${f.data.boxStart||'?'}-${f.data.boxEnd||'?'}</b><br>Prod: ${f.data.prodDate||'-'} | Exp: <b class="text-danger">${f.data.bestBefore||'-'}</b></div>`;
-            document.getElementById('outVerifyCard').classList.remove('d-none');
-            document.getElementById('outInfoPanel').innerHTML=`<h4 class="text-warning">Step 2: Scan/Verifikasi Lokasi</h4><p>Lokasi asal: <b>${f.rack}.${f.slot}</b></p>`;
-            document.getElementById('outVerifyRackSlot').value='';
-            document.getElementById('outVerifyRackSlot').focus();
-        }else{alert("❌ Barang tidak ditemukan!");resetOutboundForm();}
+    function resetOutboundView() {
+        activePlanId = null; renderPlanDrafts();
+        document.getElementById('activePlanScanning').classList.add('d-none');
+        document.getElementById('planItemListContainer').innerHTML = '<div class="text-center text-muted p-5"><i class="fas fa-clipboard-list fa-3x mb-3"></i><br>Buat plan baru atau pilih draft.</div>';
     }
 
-    document.getElementById('outVerifyRackSlot').addEventListener('input', function() { 
-        if(!currentOutboundData || !isProcessingOutbound) return; 
-        let val = this.value.trim().toUpperCase();
-        let expected = currentOutboundData.rack + '.' + currentOutboundData.slot.toUpperCase();
-        if(val === expected) { submitOutbound(); } 
-        else { document.getElementById('outVerifyResult').innerHTML = `<span class='text-danger'>Lokasi tidak cocok! Harus: <b>${expected}</b></span>`; }
+    // --- OUTBOUND SATUAN ---
+    function resetSingleOutbound() {
+        tempSingleItem = null;
+        document.getElementById('singleBarcodeScan').value = '';
+        document.getElementById('singleItemInfo').innerHTML = '';
+        document.getElementById('singleActions').classList.add('d-none');
+        document.getElementById('singleTransferForm').classList.add('d-none');
+        document.getElementById('singleNewRackSlot').value = '';
+    }
+
+    document.getElementById('singleBarcodeScan').addEventListener('keypress', function(e) {
+        if(e.key === 'Enter') {
+            let bc = this.value.trim(); let db = getDb(); tempSingleItem = null;
+            for(let ro of getRacks()) { let r = ro.id; if(!db[r]) continue; for(let s in db[r]) { for(let i=0; i<db[r][s].length; i++) { if(db[r][s][i].barcode === bc) { tempSingleItem = { rack: r, slot: s, index: i, data: db[r][s][i] }; break; } } if(tempSingleItem) break; } if(tempSingleItem) break; }
+            if(tempSingleItem) {
+                let d = tempSingleItem.data;
+                document.getElementById('singleItemInfo').innerHTML = `<div class="info-banner" style="background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)"><strong>Ditemukan!</strong><br>Produk: <b>${d.productName}</b> | Pallet: <b>${d.pallet}</b><br>Lokasi Saat Ini: <b class="text-warning">${tempSingleItem.rack}.${tempSingleItem.slot}</b></div>`;
+                document.getElementById('singleActions').classList.remove('d-none');
+                document.getElementById('singleTransferForm').classList.add('d-none');
+            } else { alert("❌ Barang tidak ditemukan di gudang!"); resetSingleOutbound(); }
+        }
     });
 
-    function submitOutbound() { 
-        if(!currentOutboundData) return; 
-        let db=getDb(); 
-        db[currentOutboundData.rack][currentOutboundData.slot].splice(currentOutboundData.index,1); 
-        if(db[currentOutboundData.rack][currentOutboundData.slot].length===0) delete db[currentOutboundData.rack][currentOutboundData.slot]; 
-        saveDb(db); syncToCloud(); alert("✅ Outbound berhasil!"); resetOutboundForm(); renderDashboard(); 
+    function showSingleTransfer() { document.getElementById('singleTransferForm').classList.remove('d-none'); document.getElementById('singleNewRackSlot').focus(); }
+
+    document.getElementById('singleNewRackSlot').addEventListener('input', function() {
+        if(!tempSingleItem) return;
+        let val = this.value.trim().toUpperCase(); let parts = val.split('.');
+        if(parts.length === 2 && parts[1].length > 0) {
+            let newRack = parts[0], newSlot = parts[1].toLowerCase();
+            let racks = getRacks(), rackObj = racks.find(r => r.id === newRack);
+            if(rackObj && rackObj.slots.includes(newSlot)) {
+                if(newRack === tempSingleItem.rack && newSlot === tempSingleItem.slot) { alert("Lokasi tujuan sama dengan lokasi asal!"); return; }
+                executeSingleTransfer(newRack, newSlot);
+            }
+        }
+    });
+
+    function executeSingleTransfer(newRack, newSlot) {
+        let db = getDb(); 
+        if(!db[newRack]) db[newRack] = {}; if(!db[newRack][newSlot]) db[newRack][newSlot] = [];
+        if(db[newRack][newSlot].length >= MAX_PALLET) { alert(`Slot tujuan ${newRack}.${newSlot} PENUH!`); return; }
+        
+        let itemData = db[tempSingleItem.rack][tempSingleItem.slot].splice(tempSingleItem.index, 1)[0];
+        if(db[tempSingleItem.rack][tempSingleItem.slot].length === 0) delete db[tempSingleItem.rack][tempSingleItem.slot];
+        
+        db[newRack][newSlot].push(itemData);
+        saveDb(db); syncToCloud(); 
+        alert(`✅ Sukses! Produk dipindahkan ke ${newRack}.${newSlot}`);
+        resetSingleOutbound(); renderDashboard();
     }
+
+    function singleItemOut() {
+        if(!tempSingleItem) return;
+        if(!confirm("Keluarkan produk ini dari gudang? Stok akan berkurang.")) return;
+        let db = getDb();
+        db[tempSingleItem.rack][tempSingleItem.slot].splice(tempSingleItem.index, 1);
+        if(db[tempSingleItem.rack][tempSingleItem.slot].length === 0) delete db[tempSingleItem.rack][tempSingleItem.slot];
+        saveDb(db); syncToCloud();
+        alert("✅ Produk berhasil dikeluarkan dari gudang!");
+        resetSingleOutbound(); renderDashboard();
+    }
+
+    // --- OUTBOUND PLAN ---
+    function renderPlanDrafts() { let plans = getPlans(); let selectHtml = '<option value="">-- Pilih Plan Draft --</option>'; plans.filter(p => p.status !== 'verified').forEach(p => { selectHtml += `<option value="${p.id}" ${p.id===activePlanId?'selected':''}>${p.destination} (${p.pickupDate || 'No Date'}) - ${p.status.toUpperCase()}</option>`; }); document.getElementById('selectPlanDraft').innerHTML = selectHtml; }
+    function createOutboundPlan() { let dest = document.getElementById('planDestination').value; let date = document.getElementById('planDate').value; if(!dest) { alert("Masukkan tujuan pengiriman!"); return; } let plans = getPlans(); let newPlan = { id: 'PLAN-' + Date.now(), destination: dest, pickupDate: date ? new Date(date).toLocaleString('id-ID') : '-', status: 'draft', items: [] }; plans.push(newPlan); savePlans(plans); activePlanId = newPlan.id; document.getElementById('planDestination').value = ''; document.getElementById('planDate').value = ''; renderPlanDrafts(); loadPlan(activePlanId); }
+    function loadPlan(planId) { activePlanId = planId; let plans = getPlans(); let plan = plans.find(p => p.id === planId); if(!plan) { resetOutboundView(); return; } document.getElementById('activePlanScanning').classList.remove('d-none'); document.getElementById('activePlanTitle').innerText = `Plan: ${plan.destination}`; if(plan.status === 'draft') { document.getElementById('scanDraftPhase').classList.remove('d-none'); document.getElementById('scanLoadingPhase').classList.add('d-none'); document.querySelector('#outbound-mode-plan .card').className = 'card plan-status-draft'; } else if(plan.status === 'loading') { document.getElementById('scanDraftPhase').classList.add('d-none'); document.getElementById('scanLoadingPhase').classList.remove('d-none'); document.querySelector('#outbound-mode-plan .card').className = 'card plan-status-loading'; } renderPlanItems(plan); renderPlanDrafts(); }
+    function renderPlanItems(plan) { let html = ''; if(plan.items.length === 0) { html = '<div class="text-center text-muted p-3">Belum ada item di plan ini.</div>'; } else { plan.items.forEach((item, idx) => { let statusBadge = item.status === 'siap_kirim' ? 'badge-warning' : (item.status === 'kirim' ? 'badge-info' : 'badge-success'); html += `<div class="plan-item"><div><strong class="text-primary">${item.productName}</strong><br><small class="text-muted">Pallet: ${item.pallet} | Karton: ${item.cartonNo || '-'} | Exp: ${item.bestBefore}</small></div><div class="text-right"><span class="badge ${statusBadge}">${item.status.replace('_', ' ')}</span><br><small class="text-muted">${item.rackSlot}</small></div></div>`; }); } document.getElementById('planItemListContainer').innerHTML = html; document.getElementById('planListTitle').innerText = `Item di Plan (${plan.items.length})`; let pStatus = plan.status.toUpperCase(); document.getElementById('planStatusBadge').innerText = pStatus; document.getElementById('planStatusBadge').className = `badge ${plan.status==='draft'?'badge-warning':(plan.status==='loading'?'badge-info':'badge-success')}`; }
+
+    document.getElementById('planProdScan').addEventListener('keypress', function(e) { if(e.key === 'Enter') { let bc = this.value.trim(); let db = getDb(); tempPlanProduct = null; for(let ro of getRacks()) { let r = ro.id; if(!db[r]) continue; for(let s in db[r]) { for(let i=0; i<db[r][s].length; i++) { if(db[r][s][i].barcode === bc) { tempPlanProduct = { rack: r, slot: s, index: i, data: db[r][s][i] }; break; } } if(tempPlanProduct) break; } if(tempPlanProduct) break; } if(tempPlanProduct) { document.getElementById('planRackScan').value = ''; document.getElementById('planRackScan').focus(); alert("Produk ditemukan! Silakan scan QR Rak untuk konfirmasi."); } else { alert("❌ Barang tidak ditemukan di database!"); this.value = ''; } } });
+    document.getElementById('planRackScan').addEventListener('input', function() { if(!tempPlanProduct) return; let val = this.value.trim().toUpperCase(); let expected = tempPlanProduct.rack + '.' + tempPlanProduct.slot.toUpperCase(); if(val === expected) { let plans = getPlans(); let plan = plans.find(p => p.id === activePlanId); if(plan) { if(plan.items.some(i => i.barcode === tempPlanProduct.data.barcode)) { alert("Produk ini sudah ada di dalam plan!"); } else { plan.items.push({ barcode: tempPlanProduct.data.barcode, pallet: tempPlanProduct.data.pallet, productName: tempPlanProduct.data.productName, boxStart: tempPlanProduct.data.boxStart, boxEnd: tempPlanProduct.data.boxEnd, bestBefore: tempPlanProduct.data.bestBefore, cartonNo: tempPlanProduct.data.cartonNo, rackSlot: expected, status: 'siap_kirim' }); savePlans(plans); renderPlanItems(plan); alert("✅ Ditambahkan ke Plan!"); } } tempPlanProduct = null; document.getElementById('planProdScan').value = ''; this.value = ''; document.getElementById('planProdScan').focus(); } });
+    function savePlanAsDraft() { alert("Plan berhasil disimpan sebagai draft!"); renderPlanDrafts(); }
+    function startLoadingProcess() { if(!activePlanId) return; let plans = getPlans(); let plan = plans.find(p => p.id === activePlanId); if(plan.items.length === 0) { alert("Tidak ada item untuk dimuat!"); return; } if(confirm("Mulai proses muat? Stok akan mulai dikurangi saat scan barcode muat.")) { plan.status = 'loading'; savePlans(plans); loadPlan(activePlanId); } }
+    document.getElementById('loadProdScan').addEventListener('keypress', function(e) { if(e.key === 'Enter') { let bc = this.value.trim(); let plans = getPlans(); let plan = plans.find(p => p.id === activePlanId); let item = plan.items.find(i => i.barcode === bc && i.status === 'siap_kirim'); if(item) { item.status = 'kirim'; let db = getDb(); for(let r in db) { for(let s in db[r]) { let idx = db[r][s].findIndex(i => i.barcode === bc); if(idx !== -1) { db[r][s].splice(idx, 1); if(db[r][s].length === 0) delete db[r][s]; saveDb(db); syncToCloud(); break; } } } savePlans(plans); renderPlanItems(plan); renderDashboard(); alert("✅ Produk berhasil dimuat dan dikurangi dari stok!"); } else { alert("❌ Produk tidak ada di plan atau sudah dimuat!"); } this.value = ''; } });
+    function verifyQC() { if(!activePlanId) return; let plans = getPlans(); let plan = plans.find(p => p.id === activePlanId); let allShipped = plan.items.every(i => i.status === 'kirim'); if(!allShipped) { alert("Masih ada produk yang belum di-scan muat!"); return; } if(confirm("QC Memverifikasi? Semua produk sudah kirim dan plan akan ditutup.")) { plan.status = 'verified'; savePlans(plans); alert("✅ Verifikasi QC Berhasil! Plan selesai."); resetOutboundView(); } }
+
+    // ================= DASHBOARD & OTHERS =================
+    function renderDashboard() { let db=getDb(), racks=getRacks(), tP=0, tSU=0, fS=0, mH='<div class="flex-row" style="flex-wrap:wrap">'; racks.forEach(ro=>{ let r=ro.id, rT=0, iRF=true, sH=''; if(!db[r])db[r]={}; let gs={}; ro.slots.forEach(s=>{let rn=s.match(/^\d+/)?s.match(/^\d+/)[0]:'O';if(!gs[rn])gs[rn]=[];gs[rn].push(s);}); for(let rn in gs){gs[rn].forEach(slot=>{let it=db[r][slot]||[];rT+=it.length;let sc=it.length===0?'slot-empty':(it.length<MAX_PALLET?'slot-partial':'slot-full');if(it.length<MAX_PALLET)iRF=false;if(it.length>=MAX_PALLET)fS++;if(it.length>0)tSU++;let pb=it.length>0?`<div class="product-badge">${(it[0].productName||'').substring(0,5)}</div>`:'';sH+=`<div class="rack-box ${sc}" onclick="showSlotDetail('${r}','${slot}')">${slot} ${pb}</div>`;});} tP+=rT; mH+=`<div style="flex:1;min-width:250px;margin-bottom:20px"><div class="card" style="padding:0;overflow:hidden"><div style="padding:12px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--card-border);display:flex;justify-content:space-between"><strong>RAK ${r}</strong><span class="badge badge-info">${ro.product}</span><span class="badge badge-warning">${rT} Pallet</span></div><div style="padding:15px" class="rack-grid">${sH}</div></div></div>`;}); mH+='</div>'; saveDb(db); document.getElementById('dash-rack-map').innerHTML=mH; let tA=(racks.reduce((a,r)=>a+r.slots.length,0))-fS; document.getElementById('dash-total-pallet').innerText=tP; document.getElementById('dash-slot-used').innerText=tSU; document.getElementById('dash-slot-full').innerText=fS; document.getElementById('dash-slot-avail').innerText=tA; }
+    function showSlotDetail(rackId, slotId) { let db=getDb(), items=db[rackId]?db[rackId][slotId]||[]:[]; document.getElementById('slotDetailTitle').innerText=`Isi Slot: Rak ${rackId} - ${slotId}`; if(items.length===0){ document.getElementById('slotDetailBody').innerHTML='<div class="text-center text-muted p-5"><i class="fas fa-box-open fa-3x mb-3"></i><br>Slot ini kosong.</div>'; } else { let lH=''; items.forEach(i => { let sc = i.status==='OK'?'badge-success':(i.status==='HOLD'?'badge-warning':'badge-danger'); let cartonNum = (i.boxStart && i.boxEnd) ? `${i.boxStart} - ${i.boxEnd}` : '-'; lH += `<div class="user-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--card-border)"><div><strong style="font-size:15px" class="text-primary">${i.productName}</strong> <span class="badge ${sc}">${i.status}</span></div><small style="color:var(--text-muted)">${i.pallet}</small></div><div class="detail-grid"><div><span class="detail-label">1. Nama Produk</span><span class="detail-val">${i.productName}</span></div><div><span class="detail-label">2. Carton Number (Barcode)</span><span class="detail-val">${i.cartonNo || '-'}</span></div><div><span class="detail-label">3. No Batch</span><span class="detail-val">${i.batch || '-'}</span></div><div><span class="detail-label">4. Tanggal Produksi</span><span class="detail-val">${i.prodDate || '-'} <small style="color:var(--text-muted)">${i.prodTime || ''}</small></span></div><div class="detail-full"><span class="detail-label">5. Product Identification Number</span><span class="detail-val mono">${i.pin || '-'}</span></div><div class="detail-full"><span class="detail-label">6. Best Before</span><span class="detail-val exp">${i.bestBefore || '-'}</span></div></div></div>`; }); document.getElementById('slotDetailBody').innerHTML=lH; } showModal('slotDetailModal'); }
 
     // ================= MASTER CRUD =================
     function renderRackTable(){let r=getRacks(),h='';r.forEach(x=>h+=`<tr><td><strong>${x.id}</strong></td><td>${x.product}</td><td>${x.slots.length}</td><td><button class="btn btn-warning btn-xs" onclick="editRack('${x.id}')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteRack('${x.id}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('rackTableBody').innerHTML=h||'<tr><td colspan="4" class="text-center text-muted">Tidak ada data</td></tr>';}
@@ -483,62 +545,30 @@
     function saveProduct(){let id=document.getElementById('mProdId').value,n=document.getElementById('mProdName').value,u=document.getElementById('mProdUnit').value,w=document.getElementById('mProdWeight').value,oid=document.getElementById('editOldProdId').value;if(!id||!n)return;let ps=getProducts();if(oid){let i=ps.findIndex(p=>p.id===oid);if(i!==-1)ps[i]={id,name:n,unit:u,weight:w};}else{if(ps.find(p=>p.id===id)){alert('Sudah ada!');return;}ps.push({id,name:n,unit:u,weight:w});}saveProducts(ps);closeModal('productModal');renderProductTable();populateDropdowns();syncToCloud();}
     function deleteProduct(id){if(!confirm(`Hapus ${id}?`))return;saveProducts(getProducts().filter(p=>p.id!==id));renderProductTable();populateDropdowns();syncToCloud();}
     function renderStatusTable(){let s=getStatuses(),h='';s.forEach(x=>h+=`<tr><td><strong>${x}</strong></td><td><button class="btn btn-danger btn-xs" onclick="deleteStatus('${x}')"><i class="fa fa-trash"></i></button></td></tr>`);document.getElementById('statusTableBody').innerHTML=h||'<tr><td colspan="2" class="text-center text-muted">Tidak ada data</td></tr>';}
-    function saveStatus(){let n=document.getElementById('mStatusName').value,o=document.getElementById('editOldStatus').value;if(!n)return;let ss=getStatuses();if(o){let i=ss.indexOf(o);if(i!==-1)ss[i]=n;}else{if(ss.includes(n)){alert('Sudah ada!');return;}ss.push(n);}saveStatuses(ss);closeModal('statusModal');renderStatusTable();document.getElementById('mStatusName').value='';syncToCloud();}
-    function deleteStatus(s){if(!confirm(`Hapus ${s}?`))return;saveStatuses(getStatuses().filter(x=>x!==s));renderStatusTable();syncToCloud();}
+    function saveStatus(){let n=document.getElementById('mStatusName').value.trim().toUpperCase();if(!n)return;let ss=getStatuses();if(ss.includes(n)){alert('Sudah ada!');return;}ss.push(n);saveStatuses(ss);closeModal('statusModal');renderStatusTable();syncToCloud();}
+    function deleteStatus(n){if(!confirm(`Hapus status ${n}?`))return;saveStatuses(getStatuses().filter(s=>s!==n));renderStatusTable();syncToCloud();}
+    function renderUserList(){let u=getUsers(),h='';for(let k in u){h+=`<div class="user-card" style="display:flex;justify-content:space-between;align-items:center"><div><strong>${k}</strong> <span class="badge ${u[k].role==='SPV'?'badge-warning':'badge-info'}">${u[k].role}</span></div><div><button class="btn btn-warning btn-xs" onclick="editUser('${k}')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="deleteUser('${k}')"><i class="fa fa-trash"></i></button></div></div>`;}document.getElementById('user-list-container').innerHTML=h||'<div class="text-muted text-center">Tidak ada user</div>';}
+    function editUser(k){let u=getUsers();document.getElementById('editUserKey').value=k;document.getElementById('usr-role').value=u[k].role;document.getElementById('usr-name').value=k;document.getElementById('usr-pass').value=u[k].password;}
+    document.getElementById('form-add-user').addEventListener('submit',function(e){e.preventDefault();let r=document.getElementById('usr-role').value,n=document.getElementById('usr-name').value.trim().toLowerCase(),p=document.getElementById('usr-pass').value,ek=document.getElementById('editUserKey').value;if(!n||!p)return;let users=getUsers();if(ek){delete users[ek];}users[n]={password:p,role:r};saveUsers(users);this.reset();document.getElementById('editUserKey').value='';renderUserList();});
+    function deleteUser(k){if(k==='spv'){alert('Tidak bisa hapus SPV utama!');return;}if(!confirm(`Hapus user ${k}?`))return;let u=getUsers();delete u[k];saveUsers(u);renderUserList();}
 
-    // ================= USER MANAGEMENT =================
-    let isEditingUser = false;
-    function renderUserList(){let users=getUsers(),h='';for(let u in users){let r=users[u].role,b=r==='SPV'?'badge-warning':'badge-success';h+=`<div class="user-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div><strong style="font-size:16px">${u}</strong> <span class="badge ${b}">${r}</span></div></div><div style="display:flex;gap:8px"><button class="btn btn-warning btn-xs" onclick="editUser('${u}')"><i class="fa fa-edit"></i> Edit</button><button class="btn btn-danger btn-xs" onclick="deleteUser('${u}')"><i class="fa fa-trash"></i> Hapus</button></div></div>`;}document.getElementById('user-list-container').innerHTML=h;}
-    function editUser(username){let users=getUsers();if(users[username]){isEditingUser=true;document.getElementById('editUserKey').value=username;document.getElementById('usr-name').value=username;document.getElementById('usr-name').readOnly=true;document.getElementById('usr-pass').value=users[username].password;document.getElementById('usr-role').value=users[username].role;document.getElementById('userFormTitle').innerHTML='<i class="fa fa-user-edit"></i> Edit: '+username;}}
-    function deleteUser(username){if(!confirm(`Hapus user ${username}?`))return;let users=getUsers();delete users[username];saveUsers(users);syncToCloud();renderUserList();}
-    document.getElementById('form-add-user').addEventListener('submit', function(e){ e.preventDefault(); let r=document.getElementById('usr-role').value,n=document.getElementById('usr-name').value.trim().toLowerCase(),p=document.getElementById('usr-pass').value; if(!n||!p){alert("Isi data!");return;} let users=getUsers(); if(isEditingUser){let key=document.getElementById('editUserKey').value;users[key]={password:p,role:r};isEditingUser=false;document.getElementById('usr-name').readOnly=false;document.getElementById('userFormTitle').innerHTML='<i class="fa fa-user-plus"></i> Tambah User';}else{if(users[n]){alert("Sudah ada!");return;}users[n]={password:p,role:r};} saveUsers(users);syncToCloud();renderUserList();document.getElementById('usr-name').value='';document.getElementById('usr-pass').value=''; });
+    // ================= SCANNER & FIREBASE =================
+    let activeScanners = {};
+    function toggleScanner(scannerId, camElId, inputId, type) { if(activeScanners[scannerId]) { activeScanners[scannerId].clear(); delete activeScanners[scannerId]; document.getElementById(camElId).style.display='none'; return; } document.getElementById(camElId).style.display='block'; const sc = new Html5QrcodeScanner(scannerId, { fps: 10, qrbox: { width: 250, height: 250 } }, false); sc.render((txt) => { document.getElementById(inputId).value = txt; document.getElementById(inputId).dispatchEvent(new Event('input')); document.getElementById(inputId).dispatchEvent(new KeyboardEvent('keypress',{key:'Enter'})); sc.clear(); delete activeScanners[scannerId]; document.getElementById(camElId).style.display='none'; }, () => {}); activeScanners[scannerId] = sc; }
+    function stopAllScanners() { for(let k in activeScanners) { try { activeScanners[k].clear(); } catch(e){} delete activeScanners[k]; } document.querySelectorAll('.scanner-zone').forEach(el => el.style.display = 'none'); }
+    let firebaseApp = null, fbDb = null, fbLinked = false;
+    function loadCloudConfig() { let c = JSON.parse(localStorage.getItem('wms_fb_config') || '{}'); if(c.url) document.getElementById('fb-url').value=c.url; if(c.api) document.getElementById('fb-api').value=c.api; if(c.project) document.getElementById('fb-project').value=c.project; if(c.appid) document.getElementById('fb-appid').value=c.appid; if(c.url && c.api && c.project && c.appid) hubungkanFirebase(true); }
+    function simpanHubungkan() { let cfg = { url: document.getElementById('fb-url').value.trim(), api: document.getElementById('fb-api').value.trim(), project: document.getElementById('fb-project').value.trim(), appid: document.getElementById('fb-appid').value.trim() }; if(!cfg.url||!cfg.api||!cfg.project||!cfg.appid){alert("Lengkapi semua field!");return;} localStorage.setItem('wms_fb_config', JSON.stringify(cfg)); hubungkanFirebase(false); }
+    function hubungkanFirebase(silent) { try { if(firebaseApp) firebase.app().delete().then(()=>initFb(silent)); else initFb(silent); } catch(e){ initFb(silent); } }
+    function initFb(silent) { let c = JSON.parse(localStorage.getItem('wms_fb_config')); if(!c) return; try { firebaseApp = firebase.initializeApp({ apiKey: c.api, authDomain: c.project+".firebaseapp.com", databaseURL: c.url, projectId: c.project, appId: c.appid }); fbDb = firebase.database(); fbLinked = true; document.getElementById('wms-sync-badge').innerHTML='<i class="fa fa-cloud"></i> Cloud'; document.getElementById('wms-sync-badge').className='badge badge-success'; if(!silent) fbLog("✅ Terhubung ke Firebase!", 'ok'); } catch(e) { fbLinked=false; if(!silent) fbLog("❌ Gagal: "+e.message, 'err'); } }
+    function tesKoneksi() { if(!fbLinked){alert("Belum terhubung!");return;} fbDb.ref('.info/connected').once('value', s=>{ fbLog(s.val()?"✅ Koneksi OK!":"❌ Gagal cek koneksi.", s.val()?'ok':'err'); }); }
+    function putuskanCloud() { if(firebaseApp) firebase.app().delete(); fbDb=null; fbLinked=false; firebaseApp=null; document.getElementById('wms-sync-badge').innerHTML='<i class="fa fa-database"></i> Lokal'; document.getElementById('wms-sync-badge').className='badge badge-warning'; fbLog("☁️ Koneksi diputus.", 'warn'); }
+    function syncToCloud() { if(!fbLinked) return; try { fbDb.ref('wms').set({ products: getProducts(), racks: getRacks(), statuses: getStatuses(), db: getDb(), plans: getPlans() }); } catch(e) { console.error("Sync error", e); } }
 
-    // ================= CAMERA SCANNER =================
-    const activeScanners = {};
-    function toggleScanner(scannerKey, elementId, targetInputId, type) { if (activeScanners[scannerKey] && activeScanners[scannerKey].isScanning) { stopScanner(scannerKey, elementId); } else { startScanner(scannerKey, elementId, targetInputId, type); } }
-    function startScanner(scannerKey, elementId, targetInputId, type) { const camEl=document.getElementById(elementId);camEl.style.display='block'; const config={fps:10,qrbox:{width:250,height:250}}; const formats=type==='QR_CODE'?[Html5QrcodeSupportedFormats.QR_CODE]:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.EAN_13]; const scanner=new Html5Qrcode(elementId,{formatsToSupport:formats}); activeScanners[scannerKey]=scanner; scanner.start({facingMode:"environment"},config,(decodedText)=>{document.getElementById(targetInputId).value=decodedText; let event=new Event('input');document.getElementById(targetInputId).dispatchEvent(event); if(targetInputId==='inBarcode'){let p=parseBarcode(decodedText);if(p&&p.pin!=='-'){document.getElementById('inParsedInfo').innerHTML=`<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b> | Prod: <b>${p.prodDate} ${p.prodTime}</b> | Exp: <b class="text-danger">${p.bestBefore}</b>`;}else if(p){document.getElementById('inParsedInfo').innerHTML=`<i class="fa fa-check-circle text-success"></i> Batch: <b>${p.batch}</b>`;}else{document.getElementById('inParsedInfo').innerHTML="<span class='text-danger'>Format salah</span>";}} if(targetInputId==='outBarcode')processOutboundScan(decodedText); stopScanner(scannerKey,elementId); },(errorMessage)=>{}).catch(err=>{alert("Gagal akses kamera.\nError: "+err);camEl.style.display='none';}); }
-    function stopScanner(scannerKey, elementId) { if (activeScanners[scannerKey]) { activeScanners[scannerKey].stop().then(() => { document.getElementById(elementId).style.display = 'none'; delete activeScanners[scannerKey]; }).catch(err => {}); } }
-    function stopAllScanners() { Object.keys(activeScanners).forEach(key => { let elId = key.includes('Rack') ? 'camInRack' : (key.includes('inB') ? 'camInBc' : (key.includes('Verify') ? 'camOutVerify' : 'camOutBc')); stopScanner(key, elId); }); }
+    // MIGRASI DATA LAMA
+    function migrateOldData() { if(!confirm("Sistem akan membaca ulang semua barcode yang sudah tersimpan dan memperbaikinya sesuai parser terbaru. Lanjutkan?")) return; let db = getDb(); let updatedCount = 0; for(let rackId in db) { for(let slotId in db[rackId]) { for(let i=0; i<db[rackId][slotId].length; i++) { let item = db[rackId][slotId][i]; if(item.barcode && item.barcode.length > 10) { let parsed = parseBarcode(item.barcode); if(parsed && parsed.prodDate !== '-') { item.batch = parsed.batch; item.pin = parsed.pin; item.prodDate = parsed.prodDate; item.prodTime = parsed.prodTime; item.bestBefore = parsed.bestBefore; item.cartonNo = parsed.cartonNo || '-'; updatedCount++; } } } } } saveDb(db); let plans = getPlans(); let planUpdated = 0; plans.forEach(plan => { plan.items.forEach(item => { if(item.barcode && item.barcode.length > 10) { let parsed = parseBarcode(item.barcode); if(parsed && parsed.prodDate !== '-') { item.batch = parsed.batch; item.pin = parsed.pin; item.prodDate = parsed.prodDate; item.prodTime = parsed.prodTime; item.bestBefore = parsed.bestBefore; item.cartonNo = parsed.cartonNo || '-'; planUpdated++; } } }); }); savePlans(plans); renderDashboard(); alert(`✅ Revisi Selesai!\n\n- Data Produk di Rak diperbarui: ${updatedCount} item\n- Data di Outbound Plan diperbarui: ${planUpdated} item`); fbLog(`🔄 Migrasi data lama selesai. Rak: ${updatedCount}, Plan: ${planUpdated}`, 'ok'); }
 
-    // ================= FIREBASE CLOUD LOGIC =================
-    let fbAppWms = null, fbDbRef = null;
-    function logFB(msg, type='info') { let l=document.getElementById('fb-log'); l.classList.remove('d-none'); l.innerHTML+=`<div class="log-${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`; l.scrollTop=l.scrollHeight; }
-    function setBadge(c, t) { let b=document.getElementById('wms-sync-badge'); b.className='badge '+c; b.innerHTML=`<i class="fa fa-${c==='badge-success'?'cloud':'database'}"></i> ${t}`; }
-    
-    function loadCloudConfig() { let c=JSON.parse(localStorage.getItem('fb_config_wms')); if(c&&c.url){document.getElementById('fb-url').value=c.url;document.getElementById('fb-api').value=c.api;document.getElementById('fb-project').value=c.project;document.getElementById('fb-appid').value=c.appid||'';simpanHubungkan(true);} }
-    
-    function simpanHubungkan(auto=false) { 
-        let url=document.getElementById('fb-url').value.replace(/\s+/g, '');
-        let api=document.getElementById('fb-api').value.replace(/\s+/g, '');
-        let proj=document.getElementById('fb-project').value.replace(/\s+/g, '');
-        let appid=document.getElementById('fb-appid').value.replace(/\s+/g, '');
-        document.getElementById('fb-url').value=url; document.getElementById('fb-api').value=api; document.getElementById('fb-project').value=proj; document.getElementById('fb-appid').value=appid;
-        if(!url||!api||!proj){if(!auto)alert("Harap lengkapi URL, API Key, dan Project ID!");return;} 
-        localStorage.setItem('fb_config_wms',JSON.stringify({url,api,project:proj,appid})); 
-        if(!auto)logFB("Menyimpan konfigurasi (Spasi dihapus otomatis)...",'warn'); 
-        try{if(fbAppWms){fbAppWms.delete().then(()=>{initFbApp(url,api,proj,appid,auto);});}else{initFbApp(url,api,proj,appid,auto);}}catch(e){logFB("Gagal: "+e.message,'err');setBadge('badge-danger','Error');} 
-    }
-    function initFbApp(url, api, proj, appid, auto) { 
-        fbAppWms=firebase.initializeApp({apiKey:api,authDomain:proj+".firebaseapp.com",databaseURL:url,projectId:proj,appId:appid},'wms-app-'+Date.now()); 
-        fbDbRef=fbAppWms.database().ref('wms_data'); 
-        fbDbRef.on('value',(snapshot)=>{
-            let data=snapshot.val();
-            if(data){
-                if(data.db) localStorage.setItem('wms_db',JSON.stringify(data.db));
-                if(data.racks) localStorage.setItem('wms_racks',JSON.stringify(data.racks));
-                if(data.products) localStorage.setItem('wms_products',JSON.stringify(data.products));
-                if(data.statuses) localStorage.setItem('wms_statuses',JSON.stringify(data.statuses));
-                if(data.users) localStorage.setItem('users',JSON.stringify(data.users));
-                renderDashboard(); populateDropdowns(); renderUserList(); 
-            }
-            setBadge('badge-success','Cloud Aktif');
-            if(!auto) logFB("✅ Data tersinkronisasi dari Cloud!",'ok');
-        },(error)=>{logFB("❌ Gagal read: "+error.message,'err');setBadge('badge-danger','Cloud Error');}); 
-        if(!auto)logFB("Menghubungkan ke Firebase...",'info'); 
-    }
-    function tesKoneksi() { if(!fbDbRef){alert("Hubungkan ke Cloud dulu!");return;} logFB("Melakukan tes koneksi...",'info'); fbDbRef.child('.info/connected').once('value').then(snap=>{if(snap.val()===true){logFB("✅ Tes Koneksi Berhasil! Online.",'ok');alert("Koneksi Cloud OK!");}else{logFB("⚠️ Tes Koneksi Gagal. Offline.",'warn');alert("Gagal terhubung. Cek kembali Database URL dan API Key.");}}).catch(e=>{logFB("❌ Error: "+e.message,'err');alert("Error: "+e.message);}); }
-    function putuskanCloud() { if(fbAppWms){fbDbRef.off();fbAppWms.delete().then(()=>{fbAppWms=null;fbDbRef=null;setBadge('badge-warning','Lokal');logFB("Koneksi Cloud diputuskan.",'warn');alert("Koneksi diputuskan.");}).catch(e=>logFB("Gagal putuskan: "+e.message,'err'));}else{alert("Tidak ada koneksi Cloud.");} }
-    function syncToCloud() { if(fbDbRef){let d={db:getDb(),racks:getRacks(),products:getProducts(),statuses:getStatuses(),users:getUsers()};fbDbRef.set(d).catch(e=>console.error("Sync Error:",e));} }
+    function fbLog(msg, type) { let el=document.getElementById('fb-log'); el.classList.remove('d-none'); let t=new Date().toLocaleTimeString('id-ID'); let c=type==='ok'?'log-ok':(type==='err'?'log-err':'log-warn'); el.innerHTML+=`<div class="${c}">[${t}] ${msg}</div>`; el.scrollTop=el.scrollHeight; }
 </script>
 </body>
 </html>
