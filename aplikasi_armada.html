@@ -1357,6 +1357,37 @@ function generateSpvInputs(){
         <label>Ubah Vendor Ekspedisi</label>
         <input type="text" id="f3-vendor-edit" value="${o.vendor||''}" style="max-width:400px;">
     </div>
+    
+    <div style="background:rgba(251,191,36,0.04); border:1px solid rgba(251,191,36,0.15); border-radius:16px; padding:20px; margin-bottom:20px;">
+        <h4 style="color:#fbbf24; font-size:12px; margin-bottom:15px;"><i class="fa-solid fa-pen-to-square"></i> Revise Dokumen (SPP & PO)</h4>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Nomor SPP</label>
+                <input type="text" id="f3-nospp-edit" value="${o.noSPP && o.noSPP !== '-' ? o.noSPP : ''}" placeholder="Kosongkan jika belum ada">
+            </div>
+            <div class="form-group">
+                <label>Status SPP</label>
+                <select id="f3-status-spp-edit">
+                    <option value="PENDING" ${o.statusSPP === 'PENDING' ? 'selected' : ''}>PENDING</option>
+                    <option value="DIBUAT" ${o.statusSPP === 'DIBUAT' ? 'selected' : ''}>DIBUAT</option>
+                    <option value="SELESAI" ${o.statusSPP === 'SELESAI' ? 'selected' : ''}>DISETUJUI</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nomor PO</label>
+                <input type="text" id="f3-nopo-edit" value="${o.noPO && o.noPO !== '-' ? o.noPO : ''}" placeholder="Kosongkan jika belum ada">
+            </div>
+            <div class="form-group">
+                <label>Status PO</label>
+                <select id="f3-status-po-edit">
+                    <option value="PENDING" ${o.statusPO === 'PENDING' ? 'selected' : ''}>PENDING</option>
+                    <option value="DIBUAT" ${o.statusPO === 'DIBUAT' ? 'selected' : ''}>DIBUAT</option>
+                    <option value="SELESAI" ${o.statusPO === 'SELESAI' ? 'selected' : ''}>DISETUJUI</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
     <div class="form-group">
         <label>Edit Jumlah Ritase</label>
         <div style="display:flex; gap:10px; align-items:center;">
@@ -1385,7 +1416,6 @@ function generateSpvInputs(){
     }
     c.innerHTML = html;
 }
-
 function applyRitEdit() {
     const oid = document.getElementById('f3-select-order').value;
     const o = DB_ORDERS.find(x => x.id === oid);
@@ -1431,13 +1461,32 @@ document.getElementById('form3').addEventListener('submit',function(e){
     DB_ORDERS[idx].fleetData = nfd;
     DB_ORDERS[idx].qty = nfd.length;
     DB_ORDERS[idx].vendor = document.getElementById('f3-vendor-edit')?.value || DB_ORDERS[idx].vendor;
+    
+    // === PROSES REVISI SPP & PO ===
+    const newNoSPP = document.getElementById('f3-nospp-edit').value.trim() || '-';
+    const newStatusSPP = document.getElementById('f3-status-spp-edit').value;
+    const newNoPO = document.getElementById('f3-nopo-edit').value.trim() || '-';
+    const newStatusPO = document.getElementById('f3-status-po-edit').value;
+
+    DB_ORDERS[idx].noSPP = newNoSPP;
+    DB_ORDERS[idx].statusSPP = newStatusSPP;
+    DB_ORDERS[idx].noPO = newNoPO;
+    DB_ORDERS[idx].statusPO = newStatusPO;
+
+    // Update SLA Tracking jika ada perubahan status
+    if(!DB_ORDERS[idx].sla) DB_ORDERS[idx].sla = {};
+    if(newStatusSPP === 'DIBUAT' && !DB_ORDERS[idx].sla.spp_created) DB_ORDERS[idx].sla.spp_created = new Date().toISOString();
+    if(newStatusSPP === 'SELESAI' && !DB_ORDERS[idx].sla.spp_approved) DB_ORDERS[idx].sla.spp_approved = new Date().toISOString();
+    if(newStatusPO === 'DIBUAT' && !DB_ORDERS[idx].sla.po_created) DB_ORDERS[idx].sla.po_created = new Date().toISOString();
+    if(newStatusPO === 'SELESAI' && !DB_ORDERS[idx].sla.po_approved) DB_ORDERS[idx].sla.po_approved = new Date().toISOString();
+
+    // Simpan data revisi
     delete DB_ORDERS[idx]._reviseFleetData; 
     DB_ORDERS[idx].ket+=' [REVISI: '+document.getElementById('f3-alasan').value+']';
     saveData();
-    alert('Revisi berhasil!');
+    alert('Revisi berhasil disimpan!');
     showView('dashboard', document.querySelector('[data-menu="dashboard"]'));
 });
-
 function loadTujuanDropdownTarif(){document.getElementById('mt-tujuan').innerHTML='<option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option>'+DB_TUJUAN.map(x=>'<option value="'+x.tujuan+'">'+x.tujuan+'</option>').join('')}function handleAddTujuanChange(){if(document.getElementById('mt-tujuan').value==='NEW'){document.getElementById('add-tujuan-select-wrap').style.display='none';document.getElementById('add-tujuan-input-wrap').style.display='block'}else{document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none'}}function cancelAddNewTujuan(){document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none';document.getElementById('mt-tujuan').value=''}document.getElementById('form-add-tarif').addEventListener('submit',function(e){e.preventDefault();let tuj=document.getElementById('mt-tujuan').value;const ven=document.getElementById('mt-vendor').value.toUpperCase(),har=parseFloat(document.getElementById('mt-harga').value),ppn=parseFloat(document.getElementById('mt-ppn').value);if(tuj==='NEW'){tuj=document.getElementById('mt-new-tujuan').value.toUpperCase();if(!tuj)return alert('Nama tujuan wajib!');if(!DB_TUJUAN.find(x=>x.tujuan===tuj))DB_TUJUAN.push({tujuan:tuj,alamat:document.getElementById('mt-alamat').value})}const i=MASTER_DATA.findIndex(m=>m.tujuan===tuj&&m.vendor===ven);if(i>=0){MASTER_DATA[i].harga=har;MASTER_DATA[i].ppn=ppn}else MASTER_DATA.push({tujuan:tuj,vendor:ven,harga:har,ppn:ppn});saveData();alert('Disimpan!');this.reset();cancelAddNewTujuan();renderMasterTable();loadTujuanDropdownTarif()});function renderMasterTable(){document.querySelector('#tableMasterTarif tbody').innerHTML=MASTER_DATA.map((m,i)=>'<tr><td><b>'+m.tujuan+'</b></td><td style="font-size:10px">'+getAlamatTujuan(m.tujuan)+'</td><td style="color:#22d3ee;font-weight:600">'+m.vendor+'</td><td>Rp '+m.harga.toLocaleString('id-ID')+'</td><td>'+m.ppn+'%</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditTarif('+i+')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){MASTER_DATA.splice('+i+',1);saveData();renderMasterTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}function bukaEditTarif(i){const m=MASTER_DATA[i];document.getElementById('edit-tarif-idx').value=i;document.getElementById('et-tujuan-old').value=m.tujuan;document.getElementById('et-tujuan').value=m.tujuan;document.getElementById('et-alamat').value=getAlamatTujuan(m.tujuan);document.getElementById('et-vendor').value=m.vendor;document.getElementById('et-harga').value=m.harga;document.getElementById('et-ppn').value=m.ppn;document.getElementById('modal-edit-tarif').style.display='flex'}
 document.getElementById('form-edit-tarif-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-tarif-idx').value),old=document.getElementById('et-tujuan-old').value,nw=document.getElementById('et-tujuan').value.toUpperCase();if(old!==nw){MASTER_DATA.forEach(m=>{if(m.tujuan===old)m.tujuan=nw});DB_ORDERS.forEach(o=>{if(o.tujuan===old)o.tujuan=nw});const tIdx=DB_TUJUAN.findIndex(t=>t.tujuan===old);if(tIdx>=0){DB_TUJUAN[tIdx].tujuan=nw;DB_TUJUAN[tIdx].alamat=document.getElementById('et-alamat').value;}}MASTER_DATA[i].tujuan=nw;MASTER_DATA[i].vendor=document.getElementById('et-vendor').value.toUpperCase();MASTER_DATA[i].harga=parseFloat(document.getElementById('et-harga').value);MASTER_DATA[i].ppn=parseFloat(document.getElementById('et-ppn').value);saveData();closeModal('modal-edit-tarif');alert('Diperbarui!');renderMasterTable()});
 
