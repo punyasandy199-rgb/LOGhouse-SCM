@@ -1352,12 +1352,26 @@ function generateSpvInputs(){
         return;
     }
     
-    let html = `
-    <div class="form-group">
-        <label>Ubah Vendor Ekspedisi</label>
-        <input type="text" id="f3-vendor-edit" value="${o.vendor||''}" style="max-width:400px;">
-    </div>
+    const tujuanOptions = [...new Set(MASTER_DATA.map(m=>m.tujuan))].map(t => `<option value="${t}" ${o.tujuan===t?'selected':''}>${t}</option>`).join('');
     
+    let html = `
+    <div class="form-grid" style="margin-bottom: 20px; border-bottom: 1px solid var(--card-border); padding-bottom: 20px;">
+        <div class="form-group">
+            <label>Tanggal Pengiriman</label>
+            <input type="date" id="f3-tgl-edit" value="${o.tgl}" required>
+        </div>
+        <div class="form-group">
+            <label>Tujuan</label>
+            <select id="f3-tujuan-edit" required>
+                ${tujuanOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Ubah Vendor Ekspedisi</label>
+            <input type="text" id="f3-vendor-edit" value="${o.vendor||''}">
+        </div>
+    </div>
+
     <div style="background:rgba(251,191,36,0.04); border:1px solid rgba(251,191,36,0.15); border-radius:16px; padding:20px; margin-bottom:20px;">
         <h4 style="color:#fbbf24; font-size:12px; margin-bottom:15px;"><i class="fa-solid fa-pen-to-square"></i> Revise Dokumen (SPP & PO)</h4>
         <div class="form-grid">
@@ -1411,10 +1425,60 @@ function generateSpvInputs(){
                     <div class="form-group"><label>No Kontainer</label><input type="text" id="f3-kontainer-${i}" value="${f.noKontainer||''}"></div>
                     <div class="form-group" style="grid-column: span 2;"><label>No. Surat Jalan (SJ)</label><input type="text" id="f3-nosj-${i}" value="${f.noSJ||''}"></div>
                 </div>
+                
+                <div style="margin-top:15px;">
+                    <label style="color:#22d3ee; margin-bottom:10px; display:block;"><i class="fa-solid fa-boxes-stacked"></i> Rincian Barang:</label>
+                    <div id="f3-items-${i}"></div>
+                    <button type="button" class="btn btn-primary btn-xs" onclick="addReviseItemRow(${i})" style="margin-top:5px;"><i class="fa fa-plus"></i> Tambah Barang</button>
+                </div>
             </div>`;
         });
     }
     c.innerHTML = html;
+    
+    // Render existing items untuk setiap rit
+    o._reviseFleetData.forEach((f, i) => {
+        if(f.items && f.items.length > 0) {
+            f.items.forEach(item => addReviseItemRow(i, item));
+        }
+    });
+}
+function addReviseItemRow(ri, existingItem=null) {
+    const c = document.getElementById('f3-items-'+ri);
+    if(!c) return;
+    const barangOptions = DB_BARANG.map(b => {
+        const sel = existingItem && existingItem.barang === b.nama ? 'selected' : '';
+        return `<option value="${b.nama}" data-kode="${b.kode}" data-satuan="${b.satuan}" data-berat="${b.beratPerUnit}" ${sel}>${b.nama} (${b.kode})</option>`;
+    }).join('');
+    const qtyVal = existingItem ? existingItem.qtyBox : '';
+    const tonVal = existingItem ? existingItem.tonase : '';
+    
+    c.insertAdjacentHTML('beforeend', `
+    <div class="item-row">
+        <div class="form-group">
+            <select class="revise-sel-barang" onchange="autoTonaseRevise(this)" required>
+                <option value="">- Pilih Barang -</option>
+                ${barangOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <input type="number" class="revise-inp-qty" placeholder="QTY" value="${qtyVal}" oninput="autoTonaseRevise(this)" required>
+        </div>
+        <div class="form-group">
+            <input type="number" class="revise-inp-tonase" readonly style="background:rgba(34,211,238,.05)" value="${tonVal}">
+        </div>
+        <button type="button" class="btn btn-danger btn-xs" onclick="this.parentElement.remove()" style="align-self:center">
+            <i class="fa fa-times"></i>
+        </button>
+    </div>`);
+}
+
+function autoTonaseRevise(el) {
+    const r = el.closest('.item-row');
+    const s = r.querySelector('select');
+    const q = parseInt(r.querySelector('.revise-inp-qty').value) || 0;
+    const b = parseFloat(s.options[s.selectedIndex]?.dataset?.berat) || 30;
+    r.querySelector('.revise-inp-tonase').value = q * b;
 }
 function applyRitEdit() {
     const oid = document.getElementById('f3-select-order').value;
@@ -1456,10 +1520,32 @@ document.getElementById('form3').addEventListener('submit',function(e){
         f.hp = document.getElementById('f3-hp-'+i)?.value || '';
         f.noKontainer = document.getElementById('f3-kontainer-'+i)?.value || '';
         f.noSJ = document.getElementById('f3-nosj-'+i)?.value || '';
+        
+        // Simpan perubahan Item & Qty
+        let items = [];
+        const itemRows = document.querySelectorAll('#f3-items-'+i+' .item-row');
+        itemRows.forEach(row => {
+            const sel = row.querySelector('select');
+            const opt = sel.options[sel.selectedIndex];
+            items.push({
+                barang: sel.value,
+                kodeBarang: opt?.dataset?.kode || '',
+                satuan: opt?.dataset?.satuan || 'BOX',
+                beratPerUnit: parseFloat(opt?.dataset?.berat) || 30,
+                qtyBox: parseInt(row.querySelector('.revise-inp-qty').value) || 0,
+                tonase: parseInt(row.querySelector('.revise-inp-tonase').value) || 0
+            });
+        });
+        f.items = items;
     });
     
     DB_ORDERS[idx].fleetData = nfd;
     DB_ORDERS[idx].qty = nfd.length;
+    
+    // === PROSES REVISI DATA UTAMA ===
+    DB_ORDERS[idx].tgl = document.getElementById('f3-tgl-edit').value;
+    DB_ORDERS[idx].tujuan = document.getElementById('f3-tujuan-edit').value;
+    DB_ORDERS[idx].alamat = getAlamatTujuan(DB_ORDERS[idx].tujuan); // Update alamat otomatis jika tujuan diubah
     DB_ORDERS[idx].vendor = document.getElementById('f3-vendor-edit')?.value || DB_ORDERS[idx].vendor;
     
     // === PROSES REVISI SPP & PO ===
