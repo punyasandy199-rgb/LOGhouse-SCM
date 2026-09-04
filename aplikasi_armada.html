@@ -1255,16 +1255,20 @@ function loadMuatDetails(){
     if(!oid){document.getElementById('muat-details-container').style.display='none';return}
     const o=DB_ORDERS.find(x=>x.id===oid);
     if(!o){document.getElementById('muat-details-container').style.display='none';return}
+    
     document.getElementById('muat-tujuan').innerText=o.tujuan;
     document.getElementById('muat-vendor').innerText=o.vendor;
     document.getElementById('muat-qty').innerText=o.qty;
+    
     const statusBadge = document.getElementById('muat-status-badge');
     statusBadge.innerText = o.statusMuat === 'DRAFT_SJ' ? 'DRAFT SJ' : (o.statusMuat === 'MUAT' ? 'LOADED' : 'WAITING');
     statusBadge.style.color = o.statusMuat === 'DRAFT_SJ' ? '#60a5fa' : '#fbbf24';
+    
     const isDraft = o.statusMuat === 'DRAFT_SJ';
     const isMuat = o.statusMuat === 'MUAT';
     const isAdmin = activeRoleKey === 'ADMIN';
     const isSPV = activeRoleKey === 'SPV';
+    
     let isReadOnly = false;
     if(isSPV && isDraft) isReadOnly = true; 
     if(isMuat) isReadOnly = true; 
@@ -1288,10 +1292,31 @@ function loadMuatDetails(){
         if(isJeddah) loadExistingMuatPhotos(i);
     });
     
-    const spvPassGroup=document.getElementById('fmuat-spv-pass-group'), sigGroup=document.getElementById('fmuat-sig-group'), submitBtn=document.getElementById('btn-submit-muat');
-    if(isAdmin){ spvPassGroup.style.display='none'; sigGroup.style.display='none'; submitBtn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Simpan Draft SJ'; submitBtn.className='btn btn-warning'; submitBtn.style.display='inline-flex'; } 
-    else if(isSPV && isDraft){ spvPassGroup.style.display=''; sigGroup.style.display=''; submitBtn.innerHTML='<i class="fa-solid fa-file-signature"></i> Verifikasi & Terbitkan SJ'; submitBtn.className='btn btn-success'; submitBtn.style.display='inline-flex'; setTimeout(initSignaturePad,300); } 
-    else { spvPassGroup.style.display='none'; sigGroup.style.display='none'; submitBtn.style.display = 'none'; }
+    const spvPassGroup=document.getElementById('fmuat-spv-pass-group'); 
+    const sigGroup=document.getElementById('fmuat-sig-group'); 
+    const submitBtn=document.getElementById('btn-submit-muat');
+    
+    if(isAdmin){ 
+        spvPassGroup.style.display='none'; 
+        sigGroup.style.display='none'; 
+        submitBtn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Simpan Draft SJ'; 
+        submitBtn.className='btn btn-warning'; 
+        submitBtn.style.display='inline-flex'; 
+    } 
+    else if(isSPV && isDraft){ 
+        spvPassGroup.style.display='block'; 
+        sigGroup.style.display='block'; 
+        submitBtn.innerHTML='<i class="fa-solid fa-file-signature"></i> Verifikasi & Terbitkan SJ'; 
+        submitBtn.className='btn btn-success'; 
+        submitBtn.style.display='inline-flex'; 
+        setTimeout(initSignaturePad,300); 
+    } 
+    else { 
+        spvPassGroup.style.display='none'; 
+        sigGroup.style.display='none'; 
+        submitBtn.style.display = 'none'; 
+    }
+    
     document.getElementById('muat-details-container').style.display='block';
 }
 function addMuatItemRow(ri,existingItem=null,isReadOnly=false){
@@ -1384,6 +1409,39 @@ document.getElementById('formConfirmMuat').addEventListener('submit',function(e)
         renderMainTable();
     }
 });
+let sigCanvas,sigCtx,sigDrawing=false;
+function initSignaturePad(){
+    sigCanvas=document.getElementById('sig-canvas');
+    if(!sigCanvas)return;
+    sigCtx=sigCanvas.getContext('2d');
+    const r=sigCanvas.getBoundingClientRect();
+    if(!r.width)return;
+    sigCanvas.width=r.width;
+    sigCanvas.height=r.height;
+    sigCtx.lineWidth=2;
+    sigCtx.lineCap='round';
+    sigCtx.strokeStyle='#000';
+    clearSignature();
+    if(!sigCanvas.dataset.bound){
+        sigCanvas.addEventListener('mousedown',sS);
+        sigCanvas.addEventListener('mousemove',sM);
+        sigCanvas.addEventListener('mouseup',sE);
+        sigCanvas.addEventListener('mouseleave',sE);
+        sigCanvas.addEventListener('touchstart',sS,{passive:false});
+        sigCanvas.addEventListener('touchmove',sM,{passive:false});
+        sigCanvas.addEventListener('touchend',sE);
+        sigCanvas.dataset.bound='true'
+    }
+}
+function sP(e){
+    const r=sigCanvas.getBoundingClientRect();
+    return{x:(e.touches?e.touches[0].clientX:e.clientX)-r.left,y:(e.touches?e.touches[0].clientY:e.clientY)-r.top}
+}
+const sS=e=>{sigDrawing=true;const p=sP(e);sigCtx.beginPath();sigCtx.moveTo(p.x,p.y);e.preventDefault()};
+const sM=e=>{if(!sigDrawing)return;const p=sP(e);sigCtx.lineTo(p.x,p.y);sigCtx.stroke();e.preventDefault()};
+const sE=()=>{sigDrawing=false};
+function clearSignature(){if(sigCtx&&sigCanvas){sigCtx.fillStyle='#fff';sigCtx.fillRect(0,0,sigCanvas.width,sigCanvas.height)}}
+
 let currentPrintedOrder=null;function tampilkanSuratJalan(o,ri){currentPrintedOrder=o;const f=o.fleetData[ri],al=o.alamat||getAlamatTujuan(o.tujuan);let rows='',tq=0,tk=0;f.items.forEach((it,i)=>{tq+=it.qtyBox;tk+=it.tonase;rows+='<tr><td class="center">'+(i+1)+'</td><td>'+(it.kodeBarang||'-')+'</td><td>'+it.barang+' (1 X '+(it.beratPerUnit||30)+' KG)</td><td class="center">'+(it.satuan||'BOX')+'</td><td class="center"><strong>'+it.qtyBox.toLocaleString('id-ID')+'</strong></td><td class="center">'+it.tonase.toLocaleString('id-ID')+'</td></tr>'});document.getElementById('sj-print-area').innerHTML='<table class="sj-header-table"><tr><td class="sj-header-left"><h1>PT. Santos Jaya Abadi</h1><p>Jl. Raya Panjunan KM. 3 Sukodono Sidoarjo 61258</p></td><td class="sj-header-right"><h2>SURAT JALAN</h2><h3>ANTAR GUDANG</h3><div class="sj-date">'+formatTanggalSJ(f.tglSJ||o.tgl)+'</div></td></tr></table><div class="sj-line"></div><table class="sj-info-table"><tr><td class="label">No. SJ</td><td>: '+f.noSJ+'</td><td class="label">Ekspedisi</td><td>: '+o.vendor+'</td></tr><tr><td class="label">Tujuan</td><td>: <strong>'+o.tujuan+'</strong></td><td class="label">Nopol</td><td>: <strong>'+f.nopol+'</strong></td></tr><tr><td class="label">Alamat</td><td>: '+al+'</td><td class="label">Sopir</td><td>: '+f.driver+'</td></tr><tr><td class="label">No. Kontainer</td><td>: '+(f.noKontainer||'-')+'</td><td class="label"></td><td></td></tr></table><table class="sj-table"><thead><tr><th>NO</th><th>KODE</th><th>NAMA BARANG</th><th>SAT</th><th>QTY</th><th>TONASE</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td colspan="4" style="text-align:right">TOTAL</td><td class="center"><strong>'+tq.toLocaleString('id-ID')+'</strong></td><td class="center"><strong>'+tk.toLocaleString('id-ID')+'</strong></td></tr></tfoot></table><div class="sj-nb">NB : Kekurangan/kerusakan barang dalam perjalanan adalah tanggung jawab ekspedisi.</div><table class="sj-signatures"><tr><td><div class="sj-sign-title">Pengirim</div>'+(f.spvSign?'<div style="height:30px;display:flex;justify-content:center;align-items:flex-end"><img src="'+f.spvSign+'" style="max-height:28px"></div>':'')+'<div class="sj-sign-line">(___________________)</div></td><td><div class="sj-sign-title">Sopir</div>'+(f.driverWorkflow&&f.driverWorkflow.signGo?'<div style="height:30px;display:flex;justify-content:center;align-items:flex-end"><img src="'+f.driverWorkflow.signGo+'" style="max-height:28px"></div>':'')+'<div class="sj-sign-line">( '+f.driver+' )</div></td><td><div class="sj-sign-title">Penerima</div><div class="sj-sign-line">(___________________)</div></td><td><div class="sj-sign-title">Security</div><div class="sj-sign-line">(___________________)</div></td><td><div class="sj-sign-title">PJ Gudang</div><div class="sj-sign-line">(___________________)</div></td></tr></table>';document.getElementById('modal-sj').style.display='flex'}function tampilkanSuratJalanById(id,ri){const o=DB_ORDERS.find(x=>x.id===id);if(o)tampilkanSuratJalan(o,ri)}function cetakSuratJalan(){window.print()}function simpanSuratJalanPDF(){html2pdf().set({margin:[6,6,6,6],filename:'SJ_'+(currentPrintedOrder.fleetData[0]?.noSJ||'Draft')+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(document.getElementById('sj-print-area')).save()}function closeModal(id){document.getElementById(id).style.display='none'}
 
 document.getElementById('formSPP').addEventListener('submit',function(e){
