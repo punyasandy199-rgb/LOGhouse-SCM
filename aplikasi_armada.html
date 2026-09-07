@@ -95,14 +95,22 @@
 .sj-wrap{width:100%;max-width:860px;margin:0 auto;background:white;overflow-x:auto;box-shadow:0 4px 6px rgba(0,0,0,0.1)}
 @page{size:A4;margin:0}
 .a4-page{
-    width:210mm;height:297mm;padding:15mm;margin:0 auto;background:white;
-    box-sizing:border-box;border:2px solid blue;position:relative;overflow:hidden;
-    color:black;font-family:Arial,sans-serif
+    width:210mm;
+    min-height:297mm;
+    padding:15mm;
+    margin:0 auto;
+    background:white;
+    box-sizing:border-box;
+    border:1px solid #ccc;
+    position:relative;
+    color:black;
+    font-family:Arial,sans-serif;
+    display:flex;
+    flex-direction:column;
 }
 .a4-page *{color:black!important}
 .watermark{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);font-size:150px;color:rgba(128,128,128,0.25);z-index:1;font-family:Arial,sans-serif}
-.content-wrapper{position:relative;z-index:2;height:100%;display:flex;flex-direction:column}
-.header p{margin:2px 0;font-size:12px}
+.content-wrapper{position:relative;z-index:2;flex-grow:1;display:flex;flex-direction:column;width:100%}.header p{margin:2px 0;font-size:12px}
 .company-name{font-weight:bold;font-size:14px}
 .doc-title{text-align:center;font-size:18px;font-weight:bold;margin:30px 0}
 .info-grid{display:grid;grid-template-columns:80px 10px auto;row-gap:3px;margin-bottom:20px;font-size:12px}
@@ -221,10 +229,17 @@
     body *{visibility:hidden}
     #modal-sj,#modal-sj *{visibility:visible}
     #modal-sj{position:absolute;left:0;top:0;width:100%;padding:0;background:#fff}
-    .a4-page{border:none;margin:0;padding:10mm;width:100%;height:auto;min-height:100vh;box-shadow:none}
-    .manual-page{box-shadow:none;border:none;min-height:auto;padding:15mm}
+    .a4-page{border:none;margin:0;padding:10mm;width:100%;min-height:297mm;box-shadow:none;overflow:visible}
+    .manual-a4{box-shadow:none;border:none;min-height:297mm;padding:15mm;overflow:visible}
     .no-print{display:none!important}
     .sj-wrap{box-shadow:none;max-width:100%}
+    
+    /* Aturan pecah halaman (Multi-page) */
+    .sj-table, .manual-table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    .signature-section, .sig-box-wide, .sig-row-top { page-break-inside: avoid; }
 }
         
         /* CSS untuk Driver dan Upload Foto */
@@ -1787,10 +1802,10 @@ function cetakSuratJalan(){window.print()}
 
 function simpanSuratJalanPDF(){
     html2pdf().set({
-        margin:[6,6,6,6],
+        margin: 0,
         filename:'SJ_'+(currentPrintedOrder.fleetData[currentRitIdx]?.noSJ||'Draft')+'.pdf',
         image:{type:'jpeg',quality:0.98},
-        html2canvas:{scale:2},
+        html2canvas:{scale:2, useCORS: true},
         jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
     }).from(document.getElementById('sj-print-area')).save();
 }
