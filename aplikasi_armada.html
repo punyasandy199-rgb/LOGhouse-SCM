@@ -226,8 +226,8 @@
 @media(max-width:900px){nav{width:220px;padding:20px 14px}main{margin-left:220px;padding:20px}.top-bar h2{font-size:1.4rem}}
 @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}.nav-item i{font-size:18px}main{margin-left:60px;padding:15px}.top-bar h2{font-size:1.1rem}.form-grid{grid-template-columns:1fr}}
 @media print {
-    @page { size: 215mm 280mm; margin: 0; } /* UKURAN KERTAS DOT MATRIX 21.5 x 28 CM */
-    html, body { margin: 0 !important; padding: 0 !important; width: 215mm; height: 280mm; overflow: hidden; }
+    @page { size: 215mm 280mm; margin: 0; } /* UKURAN KERTAS DOT MATRIX */
+    html, body { margin: 0 !important; padding: 0 !important; width: 215mm; height: 280mm; background: #fff; overflow: hidden; }
     body * { visibility: hidden; }
     #modal-sj, #modal-sj * { visibility: visible; }
     
@@ -247,14 +247,14 @@
         margin: 0; padding: 0; display: block; overflow: hidden; 
     }
     
-    /* Kunci ukuran presisi 215mm x 280mm */
+    /* Kunci presisi 280mm, tapi beri padding bawah 20mm agar tidak termakan printer */
     .a4-page, .manual-a4 {
         width: 215mm; 
         height: 280mm; 
         min-height: 280mm;
         max-height: 280mm;
         margin: 0 auto;
-        padding: 8mm 10mm; /* Jarak teks dari tepi diperkecil agar muat maksimal */
+        padding: 5mm 10mm 20mm 10mm; /* Penting: Padding bawah 20mm mendorong teks naik */
         border: none;
         box-shadow: none;
         overflow: hidden !important;
@@ -1828,7 +1828,7 @@ function simpanSuratJalanPDF(){
     // 1. Simpan style asli
     const origStyle = a4Div ? a4Div.style.cssText : '';
     
-    // 2. Paksa ukuran 215mm x 280mm sebelum di-capture ke PDF
+    // 2. Paksa ukuran 215mm x 280mm dengan padding bawah 20mm
     if(a4Div) {
         a4Div.style.width = '215mm';
         a4Div.style.height = '280mm';
@@ -1836,11 +1836,11 @@ function simpanSuratJalanPDF(){
         a4Div.style.minHeight = '280mm';
         a4Div.style.margin = '0';
         a4Div.style.border = 'none';
-        a4Div.style.padding = '8mm 10mm';
+        a4Div.style.padding = '5mm 10mm 20mm 10mm';
         a4Div.style.overflow = 'hidden';
     }
 
-    // 3. Proses PDF dengan format kustom [215, 280]
+    // 3. Proses PDF
     html2pdf().set({
         margin: 0,
         filename:'SJ_'+(currentPrintedOrder.fleetData[currentRitIdx]?.noSJ||'Draft')+'.pdf',
