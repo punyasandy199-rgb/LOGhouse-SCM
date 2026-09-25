@@ -226,35 +226,35 @@
 @media(max-width:900px){nav{width:220px;padding:20px 14px}main{margin-left:220px;padding:20px}.top-bar h2{font-size:1.4rem}}
 @media(max-width:700px){nav{width:60px;padding:15px 8px;align-items:center}.brand-text,.nav-item span{display:none}.nav-item{justify-content:center;padding:12px}.nav-item i{font-size:18px}main{margin-left:60px;padding:15px}.top-bar h2{font-size:1.1rem}.form-grid{grid-template-columns:1fr}}
 @media print {
-    @page { size: A4; margin: 0; }
-    html, body { margin: 0 !important; padding: 0 !important; width: 100%; height: 100%; overflow: hidden; }
+    @page { size: 215mm 280mm; margin: 0; } /* UKURAN KERTAS DOT MATRIX 21.5 x 28 CM */
+    html, body { margin: 0 !important; padding: 0 !important; width: 215mm; height: 280mm; overflow: hidden; }
     body * { visibility: hidden; }
     #modal-sj, #modal-sj * { visibility: visible; }
     
     #modal-sj {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+        position: absolute; top: 0; left: 0; width: 215mm; height: 280mm; 
         margin: 0; padding: 0; background: #fff; display: block; overflow: hidden;
     }
     .modal-content { 
         margin: 0; padding: 0; border: none; background: #fff; 
-        max-width: 100%; width: 100%; height: 100%; display: block; overflow: hidden; 
+        max-width: 215mm; width: 215mm; height: 280mm; display: block; overflow: hidden; 
     }
     .sj-wrap { 
         margin: 0; padding: 0; border: none; box-shadow: none; 
-        max-width: 100%; width: 100%; height: 100%; display: block; overflow: hidden; 
+        max-width: 215mm; width: 215mm; height: 280mm; display: block; overflow: hidden; 
     }
     #sj-print-area { 
         margin: 0; padding: 0; display: block; overflow: hidden; 
     }
     
-    /* Kunci presisi 296mm agar TIDAK ADA halaman kosong ke-2 */
+    /* Kunci ukuran presisi 215mm x 280mm */
     .a4-page, .manual-a4 {
-        width: 210mm;
-        height: 296mm; /* Diberi 1mm selisih dari 297mm */
-        min-height: 296mm;
-        max-height: 296mm;
+        width: 215mm; 
+        height: 280mm; 
+        min-height: 280mm;
+        max-height: 280mm;
         margin: 0 auto;
-        padding: 15mm; /* Jarak teks dari tepi */
+        padding: 8mm 10mm; /* Jarak teks dari tepi diperkecil agar muat maksimal */
         border: none;
         box-shadow: none;
         overflow: hidden !important;
@@ -262,7 +262,8 @@
         page-break-inside: avoid !important;
     }
     .no-print { display: none !important; }
-}        /* CSS untuk Driver dan Upload Foto */
+}
+        /* CSS untuk Driver dan Upload Foto */
         .driver-step { display: none; animation: slideUp .5s ease; }
         .driver-step.active { display: block; }
         .photo-upload-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:15px; margin-top:15px; }
@@ -1827,26 +1828,28 @@ function simpanSuratJalanPDF(){
     // 1. Simpan style asli
     const origStyle = a4Div ? a4Div.style.cssText : '';
     
-    // 2. Paksa tinggi presisi 296mm sebelum di-capture ke PDF
+    // 2. Paksa ukuran 215mm x 280mm sebelum di-capture ke PDF
     if(a4Div) {
-        a4Div.style.height = '296mm';
-        a4Div.style.maxHeight = '296mm';
-        a4Div.style.minHeight = '296mm';
+        a4Div.style.width = '215mm';
+        a4Div.style.height = '280mm';
+        a4Div.style.maxHeight = '280mm';
+        a4Div.style.minHeight = '280mm';
         a4Div.style.margin = '0';
         a4Div.style.border = 'none';
+        a4Div.style.padding = '8mm 10mm';
         a4Div.style.overflow = 'hidden';
     }
 
-    // 3. Proses PDF menggunakan fungsi bawaan yang stabil
+    // 3. Proses PDF dengan format kustom [215, 280]
     html2pdf().set({
         margin: 0,
         filename:'SJ_'+(currentPrintedOrder.fleetData[currentRitIdx]?.noSJ||'Draft')+'.pdf',
         image:{type:'jpeg',quality:0.98},
         html2canvas:{scale:2, useCORS: true, backgroundColor: '#ffffff'},
-        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        jsPDF:{unit:'mm', format:[215, 280], orientation:'portrait'},
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     }).from(area).save().then(() => {
-        // 4. Kembalikan style asli agar tampilan layar kembali normal
+        // 4. Kembalikan style asli
         if(a4Div) a4Div.style.cssText = origStyle;
     }).catch(err => {
         if(a4Div) a4Div.style.cssText = origStyle;
