@@ -330,7 +330,7 @@
         <div class="form-group" style="text-align:left"><label>Username</label><input type="text" id="login-username" placeholder="Username" autocomplete="off" required></div>
         <div class="form-group" style="text-align:left"><label>Password</label><input type="password" id="login-pass" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')prosesLogin()"></div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="prosesLogin()">Masuk <i class="fa fa-arrow-right"></i></button>
-        <p style="margin-top:20px;font-size:10px;color:rgba(148,163,184,.35)">Default: admin/123, spv/123, driver/123</p>
+        <p style="margin-top:20px;font-size:10px;color:rgba(148,163,184,.35)">Belum ada user default. Masukkan username & password baru untuk membuat akun Admin pertama.</p>
     </div>
 </div>
 
@@ -390,8 +390,41 @@
             </div>
         </div>
     </div>
-
-    <div id="view1" class="view"><div class="card"><h2><i class="fa-solid fa-square-plus" style="color:#22d3ee"></i> Form Booking Baru</h2><form id="form1"><div class="form-grid"><div class="form-group"><label>Tujuan</label><select id="f1-tujuan" onchange="loadVendors()" required></select></div><div class="form-group"><label>Tanggal</label><input type="date" id="f1-tgl" required></div><div class="form-group"><label>Jumlah Ritase</label><input type="number" id="f1-qty" min="1" value="1" required></div><div class="form-group"><label>Catatan</label><textarea id="f1-ket" rows="2" placeholder="Catatan..."></textarea></div></div><label style="margin-top:10px">Pilih Vendor</label><div id="f1-vendor-list" class="radio-group"></div><br><button type="submit" class="btn btn-primary">Simpan Manifest</button></form></div></div>
+<div id="view1" class="view">
+    <div class="card">
+        <h2><i class="fa-solid fa-square-plus" style="color:#22d3ee"></i> Form Booking Baru</h2>
+        <form id="form1">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Rute Awal (Asal)</label>
+                    <select id="f1-rute-awal" onchange="loadTujuanByRute()" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Tujuan</label>
+                    <select id="f1-tujuan" onchange="loadVendors()" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Tanggal</label>
+                    <input type="date" id="f1-tgl" required>
+                </div>
+                <div class="form-group">
+                    <label>Jumlah Ritase</label>
+                    <input type="number" id="f1-qty" min="1" value="1" required>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Catatan</label>
+                    <textarea id="f1-ket" rows="2" placeholder="Catatan..."></textarea>
+                </div>
+            </div>
+            <label style="margin-top:10px">Pilih Vendor & Tarif</label>
+            <div id="f1-vendor-list" class="radio-group">
+                <p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih rute awal dan tujuan untuk melihat vendor.</p>
+            </div>
+            <br>
+            <button type="submit" class="btn btn-primary">Simpan Manifest</button>
+        </form>
+    </div>
+</div>
 
     <div id="view2" class="view"><div class="card"><h2><i class="fa-solid fa-truck-field" style="color:#34d399"></i> Alokasi Armada</h2><div class="form-grid"><div class="form-group"><label>Pilih Order</label><select id="f2-select-order" onchange="prepareFleetForm()"></select></div><div class="form-group"><label>Ritase Aktual</label><input type="number" id="f2-qty-actual" min="1" value="1" onchange="generateFleetInputs()"></div></div><hr><form id="form2"><div id="fleet-inputs-container"></div><button type="submit" id="f2-submit" class="btn btn-success" disabled>Alokasikan</button></form></div></div>
 
@@ -506,7 +539,77 @@
     </div>
 
     <div id="view-master" class="view">
-        <div class="card"><h2><i class="fa-solid fa-map-location-dot"></i> Master Tujuan & Tarif</h2><form id="form-add-tarif" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#22d3ee">+ Tambah Tujuan / Tarif</h3><div class="form-grid"><div class="form-group" id="add-tujuan-select-wrap"><label>Tujuan</label><select id="mt-tujuan" onchange="handleAddTujuanChange()" required><option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option></select></div><div class="form-group" id="add-tujuan-input-wrap" style="display:none"><label>Nama Tujuan Baru</label><div style="display:flex;gap:8px"><input type="text" id="mt-new-tujuan" style="flex:1"><button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewTujuan()"><i class="fa fa-times"></i></button></div></div><div class="form-group"><label>Alamat</label><input type="text" id="mt-alamat" required></div><div class="form-group"><label>Vendor</label><input type="text" id="mt-vendor" required></div><div class="form-group"><label>Tarif (Rp)</label><input type="number" id="mt-harga" required></div><div class="form-group"><label>PPN %</label><input type="number" step="0.1" id="mt-ppn" value="11" required></div></div><button type="submit" class="btn btn-success btn-sm">Simpan</button></form><div class="table-container"><table id="tableMasterTarif"><thead><tr><th>Tujuan</th><th>Alamat</th><th>Vendor</th><th>Tarif</th><th>PPN</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="card"><h2><i class="fa-solid fa-map-location-dot"></i> Master Tujuan & Tarif</h2>
+
+<form id="form-add-tarif" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)">
+    <h3 style="font-size:11px;margin-bottom:12px;color:#22d3ee">+ Tambah Rute / Tarif</h3>
+    <div class="form-grid">
+        <div class="form-group" id="add-ruteawal-select-wrap">
+            <label>Rute Awal (Asal)</label>
+            <select id="mt-ruteawal" onchange="handleAddRuteAwalChange()" required>
+                <option value="">-- Pilih --</option>
+                <option value="NEW">+ Tambah Baru</option>
+            </select>
+        </div>
+        <div class="form-group" id="add-ruteawal-input-wrap" style="display:none">
+            <label>Rute Awal Baru</label>
+            <div style="display:flex;gap:8px">
+                <input type="text" id="mt-new-ruteawal" style="flex:1">
+                <button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewRuteAwal()"><i class="fa fa-times"></i></button>
+            </div>
+        </div>
+
+        <div class="form-group" id="add-tujuan-select-wrap">
+            <label>Tujuan</label>
+            <select id="mt-tujuan" onchange="handleAddTujuanChange()" required>
+                <option value="">-- Pilih --</option>
+                <option value="NEW">+ Tambah Baru</option>
+            </select>
+        </div>
+        <div class="form-group" id="add-tujuan-input-wrap" style="display:none">
+            <label>Nama Tujuan Baru</label>
+            <div style="display:flex;gap:8px">
+                <input type="text" id="mt-new-tujuan" style="flex:1">
+                <button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewTujuan()"><i class="fa fa-times"></i></button>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>Alamat Tujuan</label>
+            <input type="text" id="mt-alamat" required>
+        </div>
+        <div class="form-group">
+            <label>Vendor</label>
+            <input type="text" id="mt-vendor" required>
+        </div>
+        <div class="form-group">
+            <label>Tarif (Rp)</label>
+            <input type="number" id="mt-harga" required>
+        </div>
+        <div class="form-group">
+            <label>PPN %</label>
+            <input type="number" step="0.1" id="mt-ppn" value="11" required>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-success btn-sm">Simpan</button>
+</form>
+<div class="table-container">
+    <table id="tableMasterTarif">
+        <thead>
+            <tr>
+                <th>Rute Awal</th>
+                <th>Tujuan</th>
+                <th>Alamat</th>
+                <th>Vendor</th>
+                <th>Tarif</th>
+                <th>PPN</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+</div>
         <div class="card"><h2><i class="fa-solid fa-users-gear"></i> Master Armada</h2><form id="form-add-armada" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#34d399">+ Tambah Armada</h3><div class="form-grid"><div class="form-group"><label>Sopir</label><input type="text" id="ma-driver" required></div><div class="form-group"><label>Nopol</label><input type="text" id="ma-nopol" required></div><div class="form-group"><label>HP</label><input type="text" id="ma-hp" required></div></div><button type="submit" class="btn btn-primary btn-sm">Simpan</button></form><div class="table-container"><table id="tableArmada"><thead><tr><th>Sopir</th><th>Nopol</th><th>HP</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
         <div class="card"><h2><i class="fa-solid fa-box-archive"></i> Master Barang</h2><form id="form-add-barang" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#0ea5e9">+ Tambah Barang</h3><div class="form-grid"><div class="form-group"><label>Nama</label><input type="text" id="mbg-nama" required></div><div class="form-group"><label>Kode</label><input type="text" id="mbg-kode" required></div><div class="form-group"><label>Satuan</label><input type="text" id="mbg-satuan" value="BOX" required></div><div class="form-group"><label>Berat/Unit (Kg)</label><input type="number" id="mbg-berat" value="30" required></div></div><button type="submit" class="btn btn-primary btn-sm">Simpan</button></form><div class="table-container"><table id="tableBarang"><thead><tr><th>Nama</th><th>Kode</th><th>Satuan</th><th>Berat/Unit</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
         <div class="card" style="border-color:rgba(239,68,68,.3)"><h2 style="color:#f87171"><i class="fa-solid fa-user-slash"></i> Blacklist</h2><form id="form-add-blacklist" style="background:rgba(239,68,68,.02);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid rgba(239,68,68,.2)"><h3 style="font-size:11px;margin-bottom:12px;color:#f87171">+ Tambah</h3><div class="form-grid"><div class="form-group"><label>Tipe</label><select id="mb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div><div class="form-group"><label>Nilai</label><input type="text" id="mb-value" required></div></div><div class="form-group"><label>Alasan</label><textarea id="mb-alasan" rows="2" required></textarea></div><button type="submit" class="btn btn-danger btn-sm" style="background:var(--gradient-danger);border:none">Simpan</button></form><div class="table-container" style="border-color:rgba(239,68,68,.2)"><table id="tableBlacklist"><thead><tr style="background:rgba(239,68,68,.05)"><th>Tipe</th><th>Nilai</th><th>Alasan</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
@@ -603,7 +706,41 @@
 <div id="modal-sj" class="modal"><div class="modal-content" style="max-width:880px;background:#d1d5db;padding:22px"><div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap" class="no-print"><button class="btn btn-warning btn-sm" onclick="gantiVersiSJ('manual')"><i class="fa-solid fa-pen"></i> Manual</button><button class="btn btn-primary btn-sm" onclick="gantiVersiSJ('eksternal')"><i class="fa-solid fa-building"></i> Non Oracle</button><button class="btn btn-success btn-sm" onclick="cetakSuratJalan()"><i class="fa-solid fa-print"></i> Cetak</button><button class="btn btn-primary btn-sm" onclick="simpanSuratJalanPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button><button class="btn btn-danger btn-sm" onclick="closeModal('modal-sj')"><i class="fa-solid fa-xmark"></i> Tutup</button></div><div class="sj-wrap"><div id="sj-print-area"></div></div></div></div>
 <div id="modal-blacklist-confirm" class="modal" style="background:rgba(7,10,18,.93)"><div class="modal-content" style="max-width:600px;border-color:#ef4444;border-width:2px"><div class="modal-header"><h3 style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> Peringatan Blacklist!</h3><span class="modal-close" onclick="closeModal('modal-blacklist-confirm')">&times;</span></div><div style="margin-bottom:18px"><p style="font-size:12px;margin-bottom:12px">Terdeteksi <strong style="color:#f87171">BLACKLIST</strong>:</p><div id="blacklist-violations-list"></div><div class="form-group"><label style="color:#f8fafc;font-weight:600">Alasan Dispensasi:</label><textarea id="blacklist-bypass-reason" rows="3" required></textarea></div></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-sm" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted)" onclick="closeModal('modal-blacklist-confirm')">Batal</button><button class="btn btn-warning btn-sm" onclick="executeBypassSubmission()"><i class="fa-solid fa-shield-halved"></i> Izinkan</button></div></div></div>
 <div id="modal-delete-confirm" class="modal" style="background:rgba(7,10,18,.93)"><div class="modal-content" style="max-width:480px;border-color:#ef4444;border-width:2px"><div class="modal-header"><h3 style="color:#ef4444"><i class="fa-solid fa-trash-can"></i> Hapus Order?</h3><span class="modal-close" onclick="closeModal('modal-delete-confirm')">&times;</span></div><div style="margin-bottom:18px"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Hapus <strong id="delete-order-id" style="color:#f87171"></strong> permanen?</p><div class="form-group"><label>Password Akun</label><input type="password" id="delete-confirm-pass" required></div></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-sm" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted)" onclick="closeModal('modal-delete-confirm')">Batal</button><button class="btn btn-danger btn-sm" onclick="executeDeleteOrder()"><i class="fa-solid fa-trash-can"></i> Hapus</button></div></div></div>
-<div id="modal-edit-tarif" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Tarif</h3><span class="modal-close" onclick="closeModal('modal-edit-tarif')">&times;</span></div><form id="form-edit-tarif-exec"><input type="hidden" id="edit-tarif-idx"><input type="hidden" id="et-tujuan-old"><div class="form-group"><label>Tujuan</label><input type="text" id="et-tujuan" required></div><div class="form-group"><label>Alamat</label><input type="text" id="et-alamat" required></div><div class="form-group"><label>Vendor</label><input type="text" id="et-vendor" required></div><div class="form-grid"><div class="form-group"><label>Tarif</label><input type="number" id="et-harga" required></div><div class="form-group"><label>PPN</label><input type="number" step="0.1" id="et-ppn" required></div></div><button type="submit" class="btn btn-success" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
+
+<div id="modal-edit-tarif" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Tarif</h3>
+            <span class="modal-close" onclick="closeModal('modal-edit-tarif')">&times;</span>
+        </div>
+        <form id="form-edit-tarif-exec">
+            <input type="hidden" id="edit-tarif-idx">
+            <input type="hidden" id="et-tujuan-old">
+            <div class="form-group">
+                <label>Rute Awal</label>
+                <input type="text" id="et-ruteawal" required>
+            </div>
+            <div class="form-group">
+                <label>Tujuan</label>
+                <input type="text" id="et-tujuan" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat</label>
+                <input type="text" id="et-alamat" required>
+            </div>
+            <div class="form-group">
+                <label>Vendor</label>
+                <input type="text" id="et-vendor" required>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label>Tarif</label><input type="number" id="et-harga" required></div>
+                <div class="form-group"><label>PPN</label><input type="number" step="0.1" id="et-ppn" required></div>
+            </div>
+            <button type="submit" class="btn btn-success" style="width:100%;margin-top:12px">Simpan</button>
+        </form>
+    </div>
+</div>
+
 <div id="modal-edit-armada" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Sopir</h3><span class="modal-close" onclick="closeModal('modal-edit-armada')">&times;</span></div><form id="form-edit-armada-exec"><input type="hidden" id="edit-armada-idx"><div class="form-group"><label>Nama</label><input type="text" id="ea-driver" required></div><div class="form-group"><label>Nopol</label><input type="text" id="ea-nopol" required></div><div class="form-group"><label>HP</label><input type="text" id="ea-hp" required></div><button type="submit" class="btn btn-primary" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
 <div id="modal-edit-barang" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Barang</h3><span class="modal-close" onclick="closeModal('modal-edit-barang')">&times;</span></div><form id="form-edit-barang-exec"><input type="hidden" id="edit-barang-idx"><div class="form-grid"><div class="form-group"><label>Nama</label><input type="text" id="ebg-nama" required></div><div class="form-group"><label>Kode</label><input type="text" id="ebg-kode" required></div><div class="form-group"><label>Satuan</label><input type="text" id="ebg-satuan" required></div><div class="form-group"><label>Berat/Unit</label><input type="number" id="ebg-berat" required></div></div><button type="submit" class="btn btn-success" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
 <div id="modal-edit-blacklist" class="modal"><div class="modal-content" style="border-color:rgba(239,68,68,.4)"><div class="modal-header"><h3 style="color:#f87171">Edit Blacklist</h3><span class="modal-close" onclick="closeModal('modal-edit-blacklist')">&times;</span></div><form id="form-edit-blacklist-exec"><input type="hidden" id="edit-blacklist-idx"><div class="form-group"><label>Tipe</label><select id="eb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div><div class="form-group"><label>Nilai</label><input type="text" id="eb-value" required></div><div class="form-group"><label>Alasan</label><textarea id="eb-alasan" rows="3" required></textarea></div><button type="submit" class="btn btn-danger" style="width:100%;margin-top:12px;background:var(--gradient-danger);border:none">Simpan</button></form></div></div>
@@ -612,15 +749,15 @@
 <div id="modal-photo-preview" class="modal" onclick="closeModal('modal-photo-preview')"><div class="modal-content"><img src="" alt="Preview" id="preview-img"><a href="#" target="_blank" class="pdf-link-big" id="preview-pdf" style="display:none;"><i class="fa-solid fa-file-pdf"></i> Buka PDF di Tab Baru</a></div></div>
 
 <script>
-let DB_USERS=JSON.parse(localStorage.getItem('db_users'))||[
-    {role:'ADMIN',user:'admin',pass:'123',menuAccess:['dashboard','view1','view2','view-muat','view-spp','view-po','view-driver','view-download']},
-    {role:'SPV',user:'spv',pass:'123',menuAccess:['dashboard','view1','view2','view-muat','view-spp','view-po','view3','view-firebase','view-driver','view-settings','view-master','view-download']},
-    {role:'DRIVER',user:'driver',pass:'123',menuAccess:['view-driver']}
-]; 
+let DB_USERS=JSON.parse(localStorage.getItem('db_users'))||[];
 let activeRole=null,activeRoleKey=null,activeUserObj=null; 
 let DB_ORDERS=JSON.parse(localStorage.getItem('db_fleet_orders'))||[]; 
 let DB_TUJUAN=JSON.parse(localStorage.getItem('db_tujuan'))||[{tujuan:'SJA KARAWANG',alamat:'Jl. Surya Madya Kav. I-18 Karawang'},{tujuan:'FGW SURABAYA',alamat:'Jl. Raya Panjunan KM. 3 Sidoarjo'},{tujuan:'KAPAL API WAZARAN FOR INDUSTRY', alamat:'Jeddah, Saudi Arabia'}]; 
-let MASTER_DATA=JSON.parse(localStorage.getItem('db_master_tarif'))||[{tujuan:'SJA KARAWANG',vendor:'CTL',harga:4675000,ppn:11},{tujuan:'KAPAL API WAZARAN FOR INDUSTRY',vendor:'KAWAZ',harga:50000000,ppn:11}]; 
+let MASTER_DATA=JSON.parse(localStorage.getItem('db_master_tarif'))||[
+    {ruteAwal:'FGW SURABAYA',tujuan:'SJA KARAWANG',vendor:'CTL',harga:4675000,ppn:11},
+    {ruteAwal:'FGW SURABAYA',tujuan:'KAPAL API WAZARAN FOR INDUSTRY',vendor:'KAWAZ',harga:50000000,ppn:11}
+];
+
 let DB_ARMADA=JSON.parse(localStorage.getItem('db_master_armada'))||[{driver:"Slamet Riyadi",nopol:"B 9123 CCU",hp:"081388772211"}]; 
 let DB_BLACKLIST=JSON.parse(localStorage.getItem('db_master_blacklist'))||[]; 
 let DB_BARANG=JSON.parse(localStorage.getItem('db_master_barang'))||[{nama:"SIC 18 T",kode:"00J.KPI09.K0307002XX",satuan:"BOX",beratPerUnit:30}]; 
@@ -703,7 +840,35 @@ function formatTanggal(s){if(!s)return"-";const p=s.split("-");return p.length!=
 function formatTanggalSJ(s){if(!s)return"-";const p=s.split("-");if(p.length!==3)return s;const m=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];return String(parseInt(p[2])).padStart(2,'0')+' - '+m[parseInt(p[1])-1]+' - '+p[0];}
 function getAlamatTujuan(n){const t=DB_TUJUAN.find(x=>x.tujuan===n);return t?t.alamat:'-'}function getRomanMonth(m){return['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'][m]}function generateNextSJ(){const now=new Date(),yr=now.getFullYear().toString().slice(-2),mo=now.getMonth(),pfx='FGW/'+yr+'/'+getRomanMonth(mo)+'/';let mx=0;DB_ORDERS.forEach(o=>o.fleetData.forEach(f=>{if(f.noSJ&&f.noSJ.startsWith(pfx)){const s=parseInt(f.noSJ.split('/')[3]);if(s>mx)mx=s}}));return pfx+String(mx+1).padStart(3,'0')}function buildOrderOption(o){const sjs=o.fleetData?o.fleetData.map(f=>f.noSJ).filter(Boolean).join(', '):'';const stLabel=o.statusMuat==='DRAFT_SJ'?' [DRAFT]':'';return'<option value="'+o.id+'">'+formatTanggal(o.tgl)+' | '+o.id+' | '+o.tujuan+' | Rit:'+o.qty+stLabel+(sjs?' | SJ: '+sjs:'')+'</option>'}
 
-function prosesLogin(){const u=document.getElementById('login-username').value.trim(),p=document.getElementById('login-pass').value;const found=DB_USERS.find(usr=>usr.user===u&&usr.pass===p);if(found)grantAccess(found);else alert('Username atau Password salah!')} 
+function prosesLogin(){
+    const u = document.getElementById('login-username').value.trim();
+    const p = document.getElementById('login-pass').value;
+    
+    if(!u || !p){
+        alert('Username dan Password wajib diisi!');
+        return;
+    }
+    
+    if(DB_USERS.length === 0){
+        DB_USERS.push({
+            role: 'ADMIN', 
+            user: u, 
+            pass: p, 
+            menuAccess: ['dashboard','view1','view2','view-muat','view-spp','view-po','view3','view-firebase','view-driver','view-settings','view-master','view-download']
+        });
+        saveData();
+        alert('Akun Admin pertama berhasil dibuat! Anda akan masuk ke Dashboard.');
+        grantAccess(DB_USERS[0]);
+        return;
+    }
+    
+    const found = DB_USERS.find(usr => usr.user === u && usr.pass === p);
+    if(found){
+        grantAccess(found);
+    } else {
+        alert('Username atau Password salah!');
+    }
+}
 function grantAccess(userObj){activeRole=userObj.role==='SPV'?'Supervisor':userObj.role==='DRIVER'?'Driver':'Admin FGW';activeRoleKey=userObj.role;activeUserObj=userObj;document.getElementById('login-screen').style.opacity='0';setTimeout(()=>{document.getElementById('login-screen').style.display='none';document.getElementById('sidebar').style.display='flex';document.getElementById('main-content').style.display='block'},500);document.getElementById('user-badge').innerText='Akun: '+activeRole+' ('+userObj.user+')';document.getElementById('user-badge').style.color=userObj.role==='SPV'?'#fbbf24':userObj.role==='DRIVER'?'#a78bfa':'#22d3ee';document.querySelectorAll('.spv-only').forEach(m=>m.style.display=userObj.role==='SPV'?'flex':'none');
     document.querySelectorAll('.nav-item').forEach(m => {
         const menuId = m.dataset.menu;
@@ -777,7 +942,21 @@ document.getElementById('form-edit-user-exec').addEventListener('submit', functi
     renderUserTable();
 });
 
-function showView(vid, elem){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(vid).classList.add('active');if(elem)elem.classList.add('active');document.getElementById('view-title').innerText=elem?elem.innerText.trim():'Dashboard';if(vid==='view1')loadTujuanDropdown();if(vid==='view2')fillSelect('f2-select-order',getBase('BARU'),false);if(vid==='view-muat'){filterMuatSelect();setTimeout(initSignaturePad,200)}if(vid==='view-spp')filterSPPSelect();if(vid==='view-po')filterPOSelect();if(vid==='view3')filterReviseSelect();if(vid==='dashboard'){populateDashboardFilters();renderMainTable();document.getElementById('fb-setup-banner').style.display=(!firebaseDB||syncStatus==='offline')?'flex':'none'}if(vid==='view-master'){renderMasterTable();renderArmadaTable();renderBarangTable();renderBlacklistTable();loadTujuanDropdownTarif()}if(vid==='view-firebase')loadFBConfigUI();if(vid==='view-settings')renderUserTable();if(vid==='view-download'){populateDlFilters();renderDlColConfig();renderDlHistory()}if(vid==='view-driver'){filterDriverOrders();populateDriverDestinations();}}
+function showView(vid, elem){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(vid).classList.add('active');if(elem)elem.classList.add('active');document.getElementById('view-title').innerText=elem?elem.innerText.trim():'Dashboard';if(vid==='view1'){
+    loadRuteAwalDropdown();
+    document.getElementById('f1-tujuan').innerHTML = '<option value="">-- Pilih Tujuan --</option>';
+    document.getElementById('f1-vendor-list').innerHTML = '<p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih rute awal dan tujuan untuk melihat vendor.</p>';
+};if(vid==='view2')fillSelect('f2-select-order',getBase('BARU'),false);if(vid==='view-muat'){filterMuatSelect();setTimeout(initSignaturePad,200)}if(vid==='view-spp')filterSPPSelect();if(vid==='view-po')filterPOSelect();if(vid==='view3')filterReviseSelect();if(vid==='dashboard'){populateDashboardFilters();renderMainTable();document.getElementById('fb-setup-banner').style.display=(!firebaseDB||syncStatus==='offline')?'flex':'none'}
+if(vid==='view-master'){
+    renderMasterTable();
+    renderArmadaTable();
+    renderBarangTable();
+    renderBlacklistTable();
+    loadTujuanDropdownTarif();
+    loadRuteAwalDropdownTarif(); // <-- TAMBAHKAN INI
+}
+
+if(vid==='view-firebase')loadFBConfigUI();if(vid==='view-settings')renderUserTable();if(vid==='view-download'){populateDlFilters();renderDlColConfig();renderDlHistory()}if(vid==='view-driver'){filterDriverOrders();populateDriverDestinations();}}
 
 function getBase(sf){if(sf==='BARU')return DB_ORDERS.filter(o=>!o.fleetData||!o.fleetData.length);if(sf==='TERALOKASI')return DB_ORDERS.filter(o=>o.fleetData&&o.fleetData.length>0&&o.statusMuat!=='MUAT');if(sf==='MUAT_SELESAI')return DB_ORDERS.filter(o=>o.statusMuat==='MUAT');if(sf==='SPP_SELESAI')return DB_ORDERS.filter(o=>o.statusSPP==='SELESAI');return[...DB_ORDERS]}function searchF(list,text,dv){const t=(text||'').toLowerCase().trim();if(t)list=list.filter(o=>{const sj=o.fleetData?o.fleetData.map(f=>f.noSJ).filter(Boolean).join(' ').toLowerCase():'';const np=o.fleetData?o.fleetData.map(f=>f.nopol).filter(Boolean).join(' ').toLowerCase():'';return o.id.toLowerCase().includes(t)||o.tujuan.toLowerCase().includes(t)||sj.includes(t)||np.includes(t)||(o.noSPP&&o.noSPP.toLowerCase().includes(t))||(o.noPO&&o.noPO.toLowerCase().includes(t))});if(dv)list=list.filter(o=>o.tgl===dv);return list}function fillSelect(sid,orders,keep){const sel=document.getElementById(sid);const cur=keep?sel.value:'';sel.innerHTML='<option value="">-- Pilih --</option>'+orders.map(o=>buildOrderOption(o)).join('');if(cur&&orders.find(o=>o.id===cur))sel.value=cur}
 function filterMuatSelect(){
@@ -1003,7 +1182,86 @@ function downloadAndClearPhotos(orderId) {
     });
 }
 
-function loadTujuanDropdown(){document.getElementById('f1-tujuan').innerHTML='<option value="">-- Pilih --</option>'+[...new Set(MASTER_DATA.map(m=>m.tujuan))].map(x=>'<option value="'+x+'">'+x+'</option>').join('')}function loadVendors(){const t=document.getElementById('f1-tujuan').value,c=document.getElementById('f1-vendor-list');c.innerHTML=MASTER_DATA.filter(m=>m.tujuan===t).map((v,i)=>'<label class="radio-box" onclick="selectRadioBox(this)"><input type="radio" name="f1-vendor-select" value="'+v.vendor+'|'+v.harga+'|'+v.ppn+'" '+(i===0?'checked':'')+'><strong>'+v.vendor+'</strong><small style="color:#34d399">Rp '+v.harga.toLocaleString('id-ID')+' (+'+v.ppn+'%)</small></label>').join('');if(c.firstElementChild)c.firstElementChild.classList.add('selected')}function selectRadioBox(el){document.querySelectorAll('.radio-box').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');el.querySelector('input').checked=true}document.getElementById('form1').addEventListener('submit',function(e){e.preventDefault();const sv=document.querySelector('input[name="f1-vendor-select"]:checked');if(!sv)return alert('Pilih Vendor!');const[v,h,p]=sv.value.split('|');DB_ORDERS.push({id:'TRX-'+Date.now().toString().slice(-6),tujuan:document.getElementById('f1-tujuan').value,alamat:getAlamatTujuan(document.getElementById('f1-tujuan').value),tgl:document.getElementById('f1-tgl').value,qty:parseInt(document.getElementById('f1-qty').value),vendor:v,harga:parseInt(h),ppn:parseFloat(p),ket:document.getElementById('f1-ket').value,fleetData:[],statusMuat:'BELUM',noPO:'-',statusPO:'PENDING',statusSPP:'PENDING',noSPP:'-',sla:{spp_created:'',spp_approved:'',po_created:'',po_approved:''}});saveData();alert('Manifest Dibuat!');this.reset();document.getElementById('f1-vendor-list').innerHTML='';showView('dashboard', document.querySelector('[data-menu="dashboard"]'))});
+function loadRuteAwalDropdown(){
+    const rutes = [...new Set(MASTER_DATA.map(m => m.ruteAwal).filter(Boolean))];
+    document.getElementById('f1-rute-awal').innerHTML = '<option value="">-- Pilih Rute Awal --</option>' + rutes.map(r => '<option value="'+r+'">'+r+'</option>').join('');
+}
+
+function loadTujuanByRute(){
+    const ruteAwal = document.getElementById('f1-rute-awal').value;
+    const tujuanSel = document.getElementById('f1-tujuan');
+    const vendorList = document.getElementById('f1-vendor-list');
+    
+    if(!ruteAwal){
+        tujuanSel.innerHTML = '<option value="">-- Pilih Tujuan --</option>';
+        vendorList.innerHTML = '<p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih rute awal dan tujuan untuk melihat vendor.</p>';
+        return;
+    }
+
+    const tujuans = [...new Set(MASTER_DATA.filter(m => m.ruteAwal === ruteAwal).map(m => m.tujuan))];
+    tujuanSel.innerHTML = '<option value="">-- Pilih Tujuan --</option>' + tujuans.map(t => '<option value="'+t+'">'+t+'</option>').join('');
+    
+    vendorList.innerHTML = '<p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih tujuan untuk melihat vendor.</p>';
+}
+
+function loadVendors(){
+    const ruteAwal = document.getElementById('f1-rute-awal').value;
+    const t = document.getElementById('f1-tujuan').value;
+    const c = document.getElementById('f1-vendor-list');
+    
+    if(!ruteAwal || !t){
+        c.innerHTML = '<p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih rute awal dan tujuan untuk melihat vendor.</p>';
+        return;
+    }
+
+    const vendors = MASTER_DATA.filter(m => m.ruteAwal === ruteAwal && m.tujuan === t);
+    c.innerHTML = vendors.map((v,i) => 
+        '<label class="radio-box" onclick="selectRadioBox(this)">'+
+        '<input type="radio" name="f1-vendor-select" value="'+v.vendor+'|'+v.harga+'|'+v.ppn+'" '+(i===0?'checked':'')+'>'+
+        '<strong>'+v.vendor+'</strong>'+
+        '<small style="color:#34d399">Rp '+v.harga.toLocaleString('id-ID')+' (+'+v.ppn+'%)</small>'+
+        '</label>'
+    ).join('');
+    if(c.firstElementChild) c.firstElementChild.classList.add('selected');
+}
+
+
+function selectRadioBox(el){document.querySelectorAll('.radio-box').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');el.querySelector('input').checked=true}
+
+document.getElementById('form1').addEventListener('submit',function(e){
+    e.preventDefault();
+    const sv = document.querySelector('input[name="f1-vendor-select"]:checked');
+    if(!sv) return alert('Pilih Vendor!');
+    
+    const [v,h,p] = sv.value.split('|');
+    const ruteAwal = document.getElementById('f1-rute-awal').value;
+    const tujuan = document.getElementById('f1-tujuan').value;
+    
+    DB_ORDERS.push({
+        id: 'TRX-'+Date.now().toString().slice(-6),
+        ruteAwal: ruteAwal,
+        tujuan: tujuan,
+        alamat: getAlamatTujuan(tujuan),
+        tgl: document.getElementById('f1-tgl').value,
+        qty: parseInt(document.getElementById('f1-qty').value),
+        vendor: v,
+        harga: parseInt(h),
+        ppn: parseFloat(p),
+        ket: document.getElementById('f1-ket').value,
+        fleetData: [],
+        statusMuat: 'BELUM',
+        noPO: '-',
+        statusPO: 'PENDING',
+        statusSPP: 'PENDING',
+        noSPP: '-',
+        sla: {spp_created:'',spp_approved:'',po_created:'',po_approved:''}
+    });
+    saveData();
+    alert('Manifest Dibuat!');
+    this.reset();
+    document.getElementById('f1-vendor-list').innerHTML = '<p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih rute awal dan tujuan untuk melihat vendor.</p>';
+    showView('dashboard', document.querySelector('[data-menu="dashboard"]'));
+});
 
 function prepareFleetForm(){const oid=document.getElementById('f2-select-order').value;if(!oid){generateFleetInputs();return}const o=DB_ORDERS.find(x=>x.id===oid);if(o)document.getElementById('f2-qty-actual').value=o.qty;generateFleetInputs()}
 
@@ -2329,8 +2587,122 @@ document.getElementById('form3').addEventListener('submit',function(e){
     alert('Revisi berhasil disimpan!');
     showView('dashboard', document.querySelector('[data-menu="dashboard"]'));
 });
-function loadTujuanDropdownTarif(){document.getElementById('mt-tujuan').innerHTML='<option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option>'+DB_TUJUAN.map(x=>'<option value="'+x.tujuan+'">'+x.tujuan+'</option>').join('')}function handleAddTujuanChange(){if(document.getElementById('mt-tujuan').value==='NEW'){document.getElementById('add-tujuan-select-wrap').style.display='none';document.getElementById('add-tujuan-input-wrap').style.display='block'}else{document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none'}}function cancelAddNewTujuan(){document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none';document.getElementById('mt-tujuan').value=''}document.getElementById('form-add-tarif').addEventListener('submit',function(e){e.preventDefault();let tuj=document.getElementById('mt-tujuan').value;const ven=document.getElementById('mt-vendor').value.toUpperCase(),har=parseFloat(document.getElementById('mt-harga').value),ppn=parseFloat(document.getElementById('mt-ppn').value);if(tuj==='NEW'){tuj=document.getElementById('mt-new-tujuan').value.toUpperCase();if(!tuj)return alert('Nama tujuan wajib!');if(!DB_TUJUAN.find(x=>x.tujuan===tuj))DB_TUJUAN.push({tujuan:tuj,alamat:document.getElementById('mt-alamat').value})}const i=MASTER_DATA.findIndex(m=>m.tujuan===tuj&&m.vendor===ven);if(i>=0){MASTER_DATA[i].harga=har;MASTER_DATA[i].ppn=ppn}else MASTER_DATA.push({tujuan:tuj,vendor:ven,harga:har,ppn:ppn});saveData();alert('Disimpan!');this.reset();cancelAddNewTujuan();renderMasterTable();loadTujuanDropdownTarif()});function renderMasterTable(){document.querySelector('#tableMasterTarif tbody').innerHTML=MASTER_DATA.map((m,i)=>'<tr><td><b>'+m.tujuan+'</b></td><td style="font-size:10px">'+getAlamatTujuan(m.tujuan)+'</td><td style="color:#22d3ee;font-weight:600">'+m.vendor+'</td><td>Rp '+m.harga.toLocaleString('id-ID')+'</td><td>'+m.ppn+'%</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditTarif('+i+')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){MASTER_DATA.splice('+i+',1);saveData();renderMasterTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}function bukaEditTarif(i){const m=MASTER_DATA[i];document.getElementById('edit-tarif-idx').value=i;document.getElementById('et-tujuan-old').value=m.tujuan;document.getElementById('et-tujuan').value=m.tujuan;document.getElementById('et-alamat').value=getAlamatTujuan(m.tujuan);document.getElementById('et-vendor').value=m.vendor;document.getElementById('et-harga').value=m.harga;document.getElementById('et-ppn').value=m.ppn;document.getElementById('modal-edit-tarif').style.display='flex'}
-document.getElementById('form-edit-tarif-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-tarif-idx').value),old=document.getElementById('et-tujuan-old').value,nw=document.getElementById('et-tujuan').value.toUpperCase();if(old!==nw){MASTER_DATA.forEach(m=>{if(m.tujuan===old)m.tujuan=nw});DB_ORDERS.forEach(o=>{if(o.tujuan===old)o.tujuan=nw});const tIdx=DB_TUJUAN.findIndex(t=>t.tujuan===old);if(tIdx>=0){DB_TUJUAN[tIdx].tujuan=nw;DB_TUJUAN[tIdx].alamat=document.getElementById('et-alamat').value;}}MASTER_DATA[i].tujuan=nw;MASTER_DATA[i].vendor=document.getElementById('et-vendor').value.toUpperCase();MASTER_DATA[i].harga=parseFloat(document.getElementById('et-harga').value);MASTER_DATA[i].ppn=parseFloat(document.getElementById('et-ppn').value);saveData();closeModal('modal-edit-tarif');alert('Diperbarui!');renderMasterTable()});
+function loadTujuanDropdownTarif(){document.getElementById('mt-tujuan').innerHTML='<option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option>'+DB_TUJUAN.map(x=>'<option value="'+x.tujuan+'">'+x.tujuan+'</option>').join('')}function handleAddTujuanChange(){if(document.getElementById('mt-tujuan').value==='NEW'){document.getElementById('add-tujuan-select-wrap').style.display='none';document.getElementById('add-tujuan-input-wrap').style.display='block'}else{document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none'}}function cancelAddNewTujuan(){document.getElementById('add-tujuan-select-wrap').style.display='block';document.getElementById('add-tujuan-input-wrap').style.display='none';document.getElementById('mt-tujuan').value=''}
+
+function loadRuteAwalDropdownTarif(){
+    const rutes = [...new Set(MASTER_DATA.map(m => m.ruteAwal).filter(Boolean))];
+    const sel = document.getElementById('mt-ruteawal');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option>' + rutes.map(r => '<option value="'+r+'">'+r+'</option>').join('');
+    if(cur) sel.value = cur;
+}
+
+function handleAddRuteAwalChange(){
+    if(document.getElementById('mt-ruteawal').value === 'NEW'){
+        document.getElementById('add-ruteawal-select-wrap').style.display = 'none';
+        document.getElementById('add-ruteawal-input-wrap').style.display = 'block';
+    } else {
+        document.getElementById('add-ruteawal-select-wrap').style.display = 'block';
+        document.getElementById('add-ruteawal-input-wrap').style.display = 'none';
+    }
+}
+
+function cancelAddNewRuteAwal(){
+    document.getElementById('add-ruteawal-select-wrap').style.display = 'block';
+    document.getElementById('add-ruteawal-input-wrap').style.display = 'none';
+    document.getElementById('mt-ruteawal').value = '';
+}
+
+document.getElementById('form-add-tarif').addEventListener('submit',function(e){
+    e.preventDefault();
+    let ruteAwal = document.getElementById('mt-ruteawal').value;
+    if(ruteAwal === 'NEW'){
+        ruteAwal = document.getElementById('mt-new-ruteawal').value.toUpperCase();
+        if(!ruteAwal) return alert('Nama Rute Awal wajib!');
+    }
+    
+    let tuj = document.getElementById('mt-tujuan').value;
+    if(tuj === 'NEW'){
+        tuj = document.getElementById('mt-new-tujuan').value.toUpperCase();
+        if(!tuj) return alert('Nama tujuan wajib!');
+        if(!DB_TUJUAN.find(x => x.tujuan === tuj)) DB_TUJUAN.push({tujuan: tuj, alamat: document.getElementById('mt-alamat').value});
+    }
+    
+    const ven = document.getElementById('mt-vendor').value.toUpperCase();
+    const har = parseFloat(document.getElementById('mt-harga').value);
+    const ppn = parseFloat(document.getElementById('mt-ppn').value);
+    
+    const i = MASTER_DATA.findIndex(m => m.ruteAwal === ruteAwal && m.tujuan === tuj && m.vendor === ven);
+    if(i >= 0){
+        MASTER_DATA[i].harga = har;
+        MASTER_DATA[i].ppn = ppn;
+    } else {
+        MASTER_DATA.push({ruteAwal: ruteAwal, tujuan: tuj, vendor: ven, harga: har, ppn: ppn});
+    }
+    saveData();
+    alert('Disimpan!');
+    this.reset();
+    cancelAddNewTujuan();
+    cancelAddNewRuteAwal();
+    renderMasterTable();
+    loadTujuanDropdownTarif();
+    loadRuteAwalDropdownTarif();
+});
+
+function renderMasterTable(){
+    document.querySelector('#tableMasterTarif tbody').innerHTML = MASTER_DATA.map((m,i) => 
+        '<tr>'+
+        '<td><b>'+(m.ruteAwal||'-')+'</b></td>'+
+        '<td><b>'+m.tujuan+'</b></td>'+
+        '<td style="font-size:10px">'+getAlamatTujuan(m.tujuan)+'</td>'+
+        '<td style="color:#22d3ee;font-weight:600">'+m.vendor+'</td>'+
+        '<td>Rp '+m.harga.toLocaleString('id-ID')+'</td>'+
+        '<td>'+m.ppn+'%</td>'+
+        '<td><button class="btn btn-primary btn-xs" onclick="bukaEditTarif('+i+')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){MASTER_DATA.splice('+i+',1);saveData();renderMasterTable()}"><i class="fa fa-trash"></i></button></td>'+
+        '</tr>'
+    ).join('');
+}
+
+function bukaEditTarif(i){
+    const m = MASTER_DATA[i];
+    document.getElementById('edit-tarif-idx').value = i;
+    document.getElementById('et-tujuan-old').value = m.tujuan;
+    document.getElementById('et-ruteawal').value = m.ruteAwal || '';
+    document.getElementById('et-tujuan').value = m.tujuan;
+    document.getElementById('et-alamat').value = getAlamatTujuan(m.tujuan);
+    document.getElementById('et-vendor').value = m.vendor;
+    document.getElementById('et-harga').value = m.harga;
+    document.getElementById('et-ppn').value = m.ppn;
+    document.getElementById('modal-edit-tarif').style.display = 'flex';
+}
+
+document.getElementById('form-edit-tarif-exec').addEventListener('submit',function(e){
+    e.preventDefault();
+    const i = parseInt(document.getElementById('edit-tarif-idx').value);
+    const old = document.getElementById('et-tujuan-old').value;
+    const nw = document.getElementById('et-tujuan').value.toUpperCase();
+    const newRuteAwal = document.getElementById('et-ruteawal').value.toUpperCase();
+    
+    if(old !== nw){
+        MASTER_DATA.forEach(m => { if(m.tujuan === old) m.tujuan = nw; });
+        DB_ORDERS.forEach(o => { if(o.tujuan === old) o.tujuan = nw; });
+        const tIdx = DB_TUJUAN.findIndex(t => t.tujuan === old);
+        if(tIdx >= 0){
+            DB_TUJUAN[tIdx].tujuan = nw;
+            DB_TUJUAN[tIdx].alamat = document.getElementById('et-alamat').value;
+        }
+    }
+    MASTER_DATA[i].ruteAwal = newRuteAwal;
+    MASTER_DATA[i].tujuan = nw;
+    MASTER_DATA[i].vendor = document.getElementById('et-vendor').value.toUpperCase();
+    MASTER_DATA[i].harga = parseFloat(document.getElementById('et-harga').value);
+    MASTER_DATA[i].ppn = parseFloat(document.getElementById('et-ppn').value);
+    saveData();
+    closeModal('modal-edit-tarif');
+    alert('Diperbarui!');
+    renderMasterTable();
+});
+
 
 document.getElementById('form-add-armada').addEventListener('submit',function(e){e.preventDefault();const np=document.getElementById('ma-nopol').value.toUpperCase(),dr=document.getElementById('ma-driver').value,hp=document.getElementById('ma-hp').value;const i=DB_ARMADA.findIndex(a=>a.nopol===np);if(i>=0){DB_ARMADA[i].driver=dr;DB_ARMADA[i].hp=hp}else DB_ARMADA.push({driver:dr,nopol:np,hp:hp});saveData();alert('Disimpan!');this.reset();renderArmadaTable()});function renderArmadaTable(){document.querySelector('#tableArmada tbody').innerHTML=DB_ARMADA.map((a,i)=>'<tr><td><b>'+a.driver+'</b></td><td style="color:#34d399;font-weight:600">'+a.nopol+'</td><td>'+a.hp+'</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditArmada('+i+')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){DB_ARMADA.splice('+i+',1);saveData();renderArmadaTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}function bukaEditArmada(i){const a=DB_ARMADA[i];document.getElementById('edit-armada-idx').value=i;document.getElementById('ea-driver').value=a.driver;document.getElementById('ea-nopol').value=a.nopol;document.getElementById('ea-hp').value=a.hp;document.getElementById('modal-edit-armada').style.display='flex'}
 document.getElementById('form-edit-armada-exec').addEventListener('submit',function(e){e.preventDefault();const i=parseInt(document.getElementById('edit-armada-idx').value);DB_ARMADA[i].driver=document.getElementById('ea-driver').value;DB_ARMADA[i].nopol=document.getElementById('ea-nopol').value.toUpperCase();DB_ARMADA[i].hp=document.getElementById('ea-hp').value;saveData();closeModal('modal-edit-armada');renderArmadaTable()});
