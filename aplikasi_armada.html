@@ -318,6 +318,14 @@
         #modal-photo-preview .modal-content { background: rgba(0,0,0,0.9); max-width: 90vw; text-align: center; padding: 20px; }
         #modal-photo-preview img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 8px; }
         #modal-photo-preview .pdf-link-big { color: #f87171; font-size: 18px; display: block; margin-top: 20px; text-decoration: underline; }
+	
+	/* CSS Master Tabs */
+.master-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; flex-wrap: wrap; }
+.master-tab { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border: 1px solid var(--card-border); transition: all .2s; display:flex; align-items:center; gap:6px; }
+.master-tab:hover { color: var(--text-main); background: rgba(255,255,255,.03); }
+.master-tab.active { background: var(--gradient-primary); color: #fff; border-color: transparent; }
+.master-tab-content { display: none; animation: slideUp .5s ease; }
+.master-tab-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -345,8 +353,7 @@
     <div class="nav-item spv-only" data-menu="view3" onclick="showView('view3', this)"><i class="fa-solid fa-triangle-exclamation"></i> <span>Form Revise</span></div>
     <div class="nav-item" data-menu="view-firebase" onclick="showView('view-firebase', this)"><i class="fa-solid fa-cloud-arrow-up"></i> <span>Konfigurasi Cloud</span></div>
     <div class="nav-item" data-menu="view-driver" onclick="showView('view-driver', this)"><i class="fa-solid fa-route"></i> <span>Driver Verifikasi</span></div>
-    <div class="nav-item spv-only" data-menu="view-settings" onclick="showView('view-settings', this)"><i class="fa-solid fa-user-shield"></i> <span>Manajemen Akun</span></div>
-    <div class="nav-item" data-menu="view-master" onclick="showView('view-master', this)"><i class="fa-solid fa-folder-tree"></i> <span>Master Data</span></div>
+    <div class="nav-item" data-menu="view-master" onclick="showMasterTab('tarif', null); showView('view-master', this)"><i class="fa-solid fa-folder-tree"></i> <span>Master Data</span></div>
     <div class="nav-item" data-menu="view-download" onclick="showView('view-download', this)"><i class="fa-solid fa-download"></i> <span>Download Data</span></div>
     <button class="btn btn-danger" style="margin-top:auto;justify-content:center" onclick="prosesLogout()"><i class="fa-solid fa-power-off"></i> <span>Keluar</span></button>
 </nav>
@@ -504,9 +511,122 @@
 
     <div id="view-firebase" class="view"><div class="card fb-config-zone"><h2><i class="fa-solid fa-cloud-arrow-up" style="color:#22d3ee"></i> Konfigurasi Cloud</h2><p style="font-size:11px;color:var(--text-muted);margin-bottom:16px">Hubungkan ke Firebase Realtime Database agar data bisa diakses dari perangkat lain secara real-time.</p><div class="form-group"><label>Database URL</label><input type="text" id="fb-url" placeholder="https://xxx-default-rtdb.asia-southeast1.firebasedatabase.app"></div><div class="form-grid"><div class="form-group"><label>API Key</label><input type="text" id="fb-api" placeholder="AIzaSy..."></div><div class="form-group"><label>Project ID</label><input type="text" id="fb-project" placeholder="nama-project"></div></div><div class="form-group"><label>Auth Domain</label><input type="text" id="fb-auth" placeholder="nama-project.firebaseapp.com"></div><div style="display:flex;gap:10px;margin-top:5px;flex-wrap:wrap"><button class="btn btn-success" onclick="simpanFirebaseConfig()"><i class="fa-solid fa-cloud-arrow-up"></i> Simpan & Hubungkan</button><button class="btn btn-primary" onclick="testFirebaseConnection()" id="btn-test-fb"><i class="fa-solid fa-plug"></i> Tes Koneksi</button><button class="btn btn-danger" onclick="putuskanFirebase()"><i class="fa-solid fa-cloud-arrow-down"></i> Putuskan</button></div><div id="fb-status-msg" style="margin-top:12px;font-size:11px"></div><div id="fb-log" class="fb-log" style="display:none"></div></div></div>
 
-    <div id="view-settings" class="view">
-        <div class="card">
-            <h2><i class="fa-solid fa-users-gear" style="color:#fbbf24"></i> Manajemen User & Akses Menu</h2>
+<div id="view-master" class="view">
+    <div class="card">
+        <h2><i class="fa-solid fa-database"></i> Master Data Aplikasi</h2>
+        <div class="master-tabs">
+            <div class="master-tab active" id="mt-tab-btn-tarif" onclick="showMasterTab('tarif', this)"><i class="fa-solid fa-map-location-dot"></i> Tujuan & Tarif</div>
+            <div class="master-tab" id="mt-tab-btn-armada" onclick="showMasterTab('armada', this)"><i class="fa-solid fa-truck"></i> Armada</div>
+            <div class="master-tab" id="mt-tab-btn-barang" onclick="showMasterTab('barang', this)"><i class="fa-solid fa-box"></i> Barang</div>
+            <div class="master-tab" id="mt-tab-btn-blacklist" onclick="showMasterTab('blacklist', this)"><i class="fa-solid fa-ban"></i> Blacklist</div>
+            <div class="master-tab" id="mt-tab-btn-akun" onclick="showMasterTab('akun', this)"><i class="fa-solid fa-users"></i> Akun & Akses</div>
+        </div>
+
+        <!-- TAB TARIF -->
+        <div id="mt-tab-tarif" class="master-tab-content active">
+            <form id="form-add-tarif" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)">
+                <h3 style="font-size:11px;margin-bottom:12px;color:#22d3ee">+ Tambah Rute / Tarif</h3>
+                <div class="form-grid">
+                    <div class="form-group" id="add-ruteawal-select-wrap">
+                        <label>Rute Awal (Asal)</label>
+                        <select id="mt-ruteawal" onchange="handleAddRuteAwalChange()" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="NEW">+ Tambah Baru</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="add-ruteawal-input-wrap" style="display:none">
+                        <label>Rute Awal Baru</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="text" id="mt-new-ruteawal" style="flex:1">
+                            <button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewRuteAwal()"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group" id="add-tujuan-select-wrap">
+                        <label>Tujuan</label>
+                        <select id="mt-tujuan" onchange="handleAddTujuanChange()" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="NEW">+ Tambah Baru</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="add-tujuan-input-wrap" style="display:none">
+                        <label>Nama Tujuan Baru</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="text" id="mt-new-tujuan" style="flex:1">
+                            <button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewTujuan()"><i class="fa fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Alamat Tujuan</label>
+                        <input type="text" id="mt-alamat" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vendor</label>
+                        <input type="text" id="mt-vendor" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tarif (Rp)</label>
+                        <input type="number" id="mt-harga" required>
+                    </div>
+                    <div class="form-group">
+                        <label>PPN %</label>
+                        <input type="number" step="0.1" id="mt-ppn" value="11" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success btn-sm">Simpan</button>
+            </form>
+            <div class="table-container">
+                <table id="tableMasterTarif">
+                    <thead><tr><th>Rute Awal</th><th>Tujuan</th><th>Alamat</th><th>Vendor</th><th>Tarif</th><th>PPN</th><th>Aksi</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB ARMADA -->
+        <div id="mt-tab-armada" class="master-tab-content">
+            <form id="form-add-armada" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)">
+                <h3 style="font-size:11px;margin-bottom:12px;color:#34d399">+ Tambah Armada</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Sopir</label><input type="text" id="ma-driver" required></div>
+                    <div class="form-group"><label>Nopol</label><input type="text" id="ma-nopol" required></div>
+                    <div class="form-group"><label>HP</label><input type="text" id="ma-hp" required></div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+            </form>
+            <div class="table-container"><table id="tableArmada"><thead><tr><th>Sopir</th><th>Nopol</th><th>HP</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+        </div>
+
+        <!-- TAB BARANG -->
+        <div id="mt-tab-barang" class="master-tab-content">
+            <form id="form-add-barang" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)">
+                <h3 style="font-size:11px;margin-bottom:12px;color:#0ea5e9">+ Tambah Barang</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Nama</label><input type="text" id="mbg-nama" required></div>
+                    <div class="form-group"><label>Kode</label><input type="text" id="mbg-kode" required></div>
+                    <div class="form-group"><label>Satuan</label><input type="text" id="mbg-satuan" value="BOX" required></div>
+                    <div class="form-group"><label>Berat/Unit (Kg)</label><input type="number" id="mbg-berat" value="30" required></div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+            </form>
+            <div class="table-container"><table id="tableBarang"><thead><tr><th>Nama</th><th>Kode</th><th>Satuan</th><th>Berat/Unit</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+        </div>
+
+        <!-- TAB BLACKLIST -->
+        <div id="mt-tab-blacklist" class="master-tab-content">
+            <form id="form-add-blacklist" style="background:rgba(239,68,68,.02);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid rgba(239,68,68,.2)">
+                <h3 style="font-size:11px;margin-bottom:12px;color:#f87171">+ Tambah Blacklist</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Tipe</label><select id="mb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div>
+                    <div class="form-group"><label>Nilai</label><input type="text" id="mb-value" required></div>
+                </div>
+                <div class="form-group"><label>Alasan</label><textarea id="mb-alasan" rows="2" required></textarea></div>
+                <button type="submit" class="btn btn-danger btn-sm" style="background:var(--gradient-danger);border:none">Simpan</button>
+            </form>
+            <div class="table-container" style="border-color:rgba(239,68,68,.2)"><table id="tableBlacklist"><thead><tr style="background:rgba(239,68,68,.05)"><th>Tipe</th><th>Nilai</th><th>Alasan</th><th>Aksi</th></tr></thead><tbody></tbody></table></div>
+        </div>
+
+        <!-- TAB AKUN & AKSES -->
+        <div id="mt-tab-akun" class="master-tab-content">
             <div class="settings-grid">
                 <div class="settings-card">
                     <h3><i class="fa-solid fa-user-plus"></i> Tambah User Baru</h3>
@@ -515,6 +635,7 @@
                             <label>Role</label>
                             <select id="usr-role" required>
                                 <option value="ADMIN">Admin FGW</option>
+				<option value="ADMINRMW">Admin RMW</option>
                                 <option value="SPV">Supervisor</option>
                                 <option value="DRIVER">Driver</option>
                             </select>
@@ -536,85 +657,9 @@
                 </div>
             </div>
         </div>
+
     </div>
-
-    <div id="view-master" class="view">
-        <div class="card"><h2><i class="fa-solid fa-map-location-dot"></i> Master Tujuan & Tarif</h2>
-
-<form id="form-add-tarif" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)">
-    <h3 style="font-size:11px;margin-bottom:12px;color:#22d3ee">+ Tambah Rute / Tarif</h3>
-    <div class="form-grid">
-        <div class="form-group" id="add-ruteawal-select-wrap">
-            <label>Rute Awal (Asal)</label>
-            <select id="mt-ruteawal" onchange="handleAddRuteAwalChange()" required>
-                <option value="">-- Pilih --</option>
-                <option value="NEW">+ Tambah Baru</option>
-            </select>
-        </div>
-        <div class="form-group" id="add-ruteawal-input-wrap" style="display:none">
-            <label>Rute Awal Baru</label>
-            <div style="display:flex;gap:8px">
-                <input type="text" id="mt-new-ruteawal" style="flex:1">
-                <button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewRuteAwal()"><i class="fa fa-times"></i></button>
-            </div>
-        </div>
-
-        <div class="form-group" id="add-tujuan-select-wrap">
-            <label>Tujuan</label>
-            <select id="mt-tujuan" onchange="handleAddTujuanChange()" required>
-                <option value="">-- Pilih --</option>
-                <option value="NEW">+ Tambah Baru</option>
-            </select>
-        </div>
-        <div class="form-group" id="add-tujuan-input-wrap" style="display:none">
-            <label>Nama Tujuan Baru</label>
-            <div style="display:flex;gap:8px">
-                <input type="text" id="mt-new-tujuan" style="flex:1">
-                <button type="button" class="btn btn-danger btn-xs" onclick="cancelAddNewTujuan()"><i class="fa fa-times"></i></button>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label>Alamat Tujuan</label>
-            <input type="text" id="mt-alamat" required>
-        </div>
-        <div class="form-group">
-            <label>Vendor</label>
-            <input type="text" id="mt-vendor" required>
-        </div>
-        <div class="form-group">
-            <label>Tarif (Rp)</label>
-            <input type="number" id="mt-harga" required>
-        </div>
-        <div class="form-group">
-            <label>PPN %</label>
-            <input type="number" step="0.1" id="mt-ppn" value="11" required>
-        </div>
-    </div>
-    <button type="submit" class="btn btn-success btn-sm">Simpan</button>
-</form>
-<div class="table-container">
-    <table id="tableMasterTarif">
-        <thead>
-            <tr>
-                <th>Rute Awal</th>
-                <th>Tujuan</th>
-                <th>Alamat</th>
-                <th>Vendor</th>
-                <th>Tarif</th>
-                <th>PPN</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
 </div>
-</div>
-        <div class="card"><h2><i class="fa-solid fa-users-gear"></i> Master Armada</h2><form id="form-add-armada" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#34d399">+ Tambah Armada</h3><div class="form-grid"><div class="form-group"><label>Sopir</label><input type="text" id="ma-driver" required></div><div class="form-group"><label>Nopol</label><input type="text" id="ma-nopol" required></div><div class="form-group"><label>HP</label><input type="text" id="ma-hp" required></div></div><button type="submit" class="btn btn-primary btn-sm">Simpan</button></form><div class="table-container"><table id="tableArmada"><thead><tr><th>Sopir</th><th>Nopol</th><th>HP</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
-        <div class="card"><h2><i class="fa-solid fa-box-archive"></i> Master Barang</h2><form id="form-add-barang" style="background:rgba(255,255,255,.01);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid var(--card-border)"><h3 style="font-size:11px;margin-bottom:12px;color:#0ea5e9">+ Tambah Barang</h3><div class="form-grid"><div class="form-group"><label>Nama</label><input type="text" id="mbg-nama" required></div><div class="form-group"><label>Kode</label><input type="text" id="mbg-kode" required></div><div class="form-group"><label>Satuan</label><input type="text" id="mbg-satuan" value="BOX" required></div><div class="form-group"><label>Berat/Unit (Kg)</label><input type="number" id="mbg-berat" value="30" required></div></div><button type="submit" class="btn btn-primary btn-sm">Simpan</button></form><div class="table-container"><table id="tableBarang"><thead><tr><th>Nama</th><th>Kode</th><th>Satuan</th><th>Berat/Unit</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
-        <div class="card" style="border-color:rgba(239,68,68,.3)"><h2 style="color:#f87171"><i class="fa-solid fa-user-slash"></i> Blacklist</h2><form id="form-add-blacklist" style="background:rgba(239,68,68,.02);padding:18px;border-radius:12px;margin-bottom:20px;border:1px solid rgba(239,68,68,.2)"><h3 style="font-size:11px;margin-bottom:12px;color:#f87171">+ Tambah</h3><div class="form-grid"><div class="form-group"><label>Tipe</label><select id="mb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div><div class="form-group"><label>Nilai</label><input type="text" id="mb-value" required></div></div><div class="form-group"><label>Alasan</label><textarea id="mb-alasan" rows="2" required></textarea></div><button type="submit" class="btn btn-danger btn-sm" style="background:var(--gradient-danger);border:none">Simpan</button></form><div class="table-container" style="border-color:rgba(239,68,68,.2)"><table id="tableBlacklist"><thead><tr style="background:rgba(239,68,68,.05)"><th>Tipe</th><th>Nilai</th><th>Alasan</th><th>Aksi</th></tr></thead><tbody></tbody></table></div></div>
-    </div>
-    
     <div id="view-driver" class="view">
         <div class="card">
             <h2><i class="fa-solid fa-route" style="color:#34d399"></i> Verifikasi Pengiriman Driver</h2>
@@ -745,7 +790,7 @@
 <div id="modal-edit-barang" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit Barang</h3><span class="modal-close" onclick="closeModal('modal-edit-barang')">&times;</span></div><form id="form-edit-barang-exec"><input type="hidden" id="edit-barang-idx"><div class="form-grid"><div class="form-group"><label>Nama</label><input type="text" id="ebg-nama" required></div><div class="form-group"><label>Kode</label><input type="text" id="ebg-kode" required></div><div class="form-group"><label>Satuan</label><input type="text" id="ebg-satuan" required></div><div class="form-group"><label>Berat/Unit</label><input type="number" id="ebg-berat" required></div></div><button type="submit" class="btn btn-success" style="width:100%;margin-top:12px">Simpan</button></form></div></div>
 <div id="modal-edit-blacklist" class="modal"><div class="modal-content" style="border-color:rgba(239,68,68,.4)"><div class="modal-header"><h3 style="color:#f87171">Edit Blacklist</h3><span class="modal-close" onclick="closeModal('modal-edit-blacklist')">&times;</span></div><form id="form-edit-blacklist-exec"><input type="hidden" id="edit-blacklist-idx"><div class="form-group"><label>Tipe</label><select id="eb-tipe" required><option value="NOPOL">Nopol</option><option value="SOPIR">Sopir</option></select></div><div class="form-group"><label>Nilai</label><input type="text" id="eb-value" required></div><div class="form-group"><label>Alasan</label><textarea id="eb-alasan" rows="3" required></textarea></div><button type="submit" class="btn btn-danger" style="width:100%;margin-top:12px;background:var(--gradient-danger);border:none">Simpan</button></form></div></div>
 <div id="modal-order-details" class="modal"><div class="modal-content" style="max-width:800px"><div class="modal-header"><h3>Detail Order</h3><span class="modal-close" onclick="closeModal('modal-order-details')">&times;</span></div><div id="order-details-content"></div></div></div>
-<div id="modal-edit-user" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit User</h3><span class="modal-close" onclick="closeModal('modal-edit-user')">&times;</span></div><form id="form-edit-user-exec"><input type="hidden" id="edit-user-idx"><div class="form-group"><label>Role</label><select id="eu-role" required><option value="ADMIN">Admin FGW</option><option value="SPV">Supervisor</option><option value="DRIVER">Driver</option></select></div><div class="form-group"><label>Username</label><input type="text" id="eu-name" required></div><div class="form-group"><label>Password</label><input type="text" id="eu-pass" required></div><button type="submit" class="btn btn-warning" style="color:#fff; width:100%; margin-top:12px;">Update User</button></form></div></div>
+<div id="modal-edit-user" class="modal"><div class="modal-content"><div class="modal-header"><h3>Edit User</h3><span class="modal-close" onclick="closeModal('modal-edit-user')">&times;</span></div><form id="form-edit-user-exec"><input type="hidden" id="edit-user-idx"><div class="form-group"><label>Role</label><select id="eu-role" required><option value="ADMIN">Admin FGW</option><option value="adminRMW">Admin RMW</option><option value="SPV">Supervisor</option><option value="DRIVER">Driver</option></select></div><div class="form-group"><label>Username</label><input type="text" id="eu-name" required></div><div class="form-group"><label>Password</label><input type="text" id="eu-pass" required></div><button type="submit" class="btn btn-warning" style="color:#fff; width:100%; margin-top:12px;">Update User</button></form></div></div>
 <div id="modal-photo-preview" class="modal" onclick="closeModal('modal-photo-preview')"><div class="modal-content"><img src="" alt="Preview" id="preview-img"><a href="#" target="_blank" class="pdf-link-big" id="preview-pdf" style="display:none;"><i class="fa-solid fa-file-pdf"></i> Buka PDF di Tab Baru</a></div></div>
 
 <script>
@@ -782,9 +827,8 @@ const ALL_MENUS = [
     {id:'dashboard', name:'Dashboard'}, {id:'view1', name:'Pesanan Baru'}, {id:'view2', name:'Alokasi Armada'}, 
     {id:'view-muat', name:'Konfirmasi Muat'}, {id:'view-spp', name:'Form SPP'}, {id:'view-po', name:'Form PO'}, 
     {id:'view-driver', name:'Driver Verifikasi'}, {id:'view-download', name:'Download Data'}, {id:'view-master', name:'Master Data'}, 
-    {id:'view3', name:'Form Revise'}, {id:'view-firebase', name:'Konfigurasi Cloud'}, {id:'view-settings', name:'Manajemen Akun'}
+    {id:'view3', name:'Form Revise'}, {id:'view-firebase', name:'Konfigurasi Cloud'}
 ];
-
 function renderDlColConfig(){const c=document.getElementById('dl-col-config');if(!c)return;c.innerHTML=dlColConfig.map((col,i)=>`<div class="col-config-item ${col.on?'':'disabled'}" data-idx="${i}"><input type="checkbox" ${col.on?'checked':''} onchange="dlToggleCol(${i},this.checked)"><span class="col-label" onclick="dlToggleCol(${i},!dlColConfig[${i}].on)">${col.label}</span><div class="col-btns"><button type="button" onclick="dlMoveCol(${i},-1)"><i class="fa-solid fa-chevron-up"></i></button><button type="button" onclick="dlMoveCol(${i},1)"><i class="fa-solid fa-chevron-down"></i></button></div></div>`).join('');updateDlPreviewCols();}
 function dlToggleCol(i,v){dlColConfig[i].on=v;saveDlColConfig();renderDlColConfig()}function dlMoveCol(i,dir){const ni=i+dir;if(ni<0||ni>=dlColConfig.length)return;[dlColConfig[i],dlColConfig[ni]]=[dlColConfig[ni],dlColConfig[i]];saveDlColConfig();renderDlColConfig();}function dlToggleAllCols(v){dlColConfig.forEach(c=>c.on=v);saveDlColConfig();renderDlColConfig()}function dlResetCols(){dlColConfig=DL_COLUMNS_DEFAULT.map(c=>({...c}));saveDlColConfig();renderDlColConfig()}function saveDlColConfig(){localStorage.setItem('dl_col_config',JSON.stringify(dlColConfig))}function updateDlPreviewCols(){const el=document.getElementById('dl-preview-cols');if(!el)return;const active=dlColConfig.filter(c=>c.on);if(!active.length){el.innerHTML='<span style="color:#f87171">Tidak ada kolom dipilih</span>';return}el.innerHTML='Urutan: '+active.map(c=>'<span>'+c.label+'</span>').join(' → ');}function setDlFormat(fmt,btn){dlFormat=fmt;btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
 function populateDlFilters(){const vs=[...new Set(MASTER_DATA.map(m=>m.vendor))],ts=[...new Set(MASTER_DATA.map(m=>m.tujuan))];const fv=document.getElementById('dl-vendor'),ft=document.getElementById('dl-tujuan');if(fv)fv.innerHTML='<option value="">Semua</option>'+vs.map(v=>'<option value="'+v+'">'+v+'</option>').join('');if(ft)ft.innerHTML='<option value="">Semua</option>'+ts.map(t=>'<option value="'+t+'">'+t+'</option>').join('');}
@@ -854,8 +898,9 @@ function prosesLogin(){
             role: 'ADMIN', 
             user: u, 
             pass: p, 
-            menuAccess: ['dashboard','view1','view2','view-muat','view-spp','view-po','view3','view-firebase','view-driver','view-settings','view-master','view-download']
+            menuAccess: ['dashboard','view1','view2','view-muat','view-spp','view-po','view3','view-firebase','view-driver','view-master','view-download']
         });
+
         saveData();
         alert('Akun Admin pertama berhasil dibuat! Anda akan masuk ke Dashboard.');
         grantAccess(DB_USERS[0]);
@@ -869,7 +914,7 @@ function prosesLogin(){
         alert('Username atau Password salah!');
     }
 }
-function grantAccess(userObj){activeRole=userObj.role==='SPV'?'Supervisor':userObj.role==='DRIVER'?'Driver':'Admin FGW';activeRoleKey=userObj.role;activeUserObj=userObj;document.getElementById('login-screen').style.opacity='0';setTimeout(()=>{document.getElementById('login-screen').style.display='none';document.getElementById('sidebar').style.display='flex';document.getElementById('main-content').style.display='block'},500);document.getElementById('user-badge').innerText='Akun: '+activeRole+' ('+userObj.user+')';document.getElementById('user-badge').style.color=userObj.role==='SPV'?'#fbbf24':userObj.role==='DRIVER'?'#a78bfa':'#22d3ee';document.querySelectorAll('.spv-only').forEach(m=>m.style.display=userObj.role==='SPV'?'flex':'none');
+function grantAccess(userObj){activeRole=userObj.role==='SPV'?'Supervisor':userObj.role==='DRIVER'?'Driver':userObj.role==='adminRMW'?'Admin RMW':'Admin FGW';activeRoleKey=userObj.role;activeUserObj=userObj;document.getElementById('login-screen').style.opacity='0';setTimeout(()=>{document.getElementById('login-screen').style.display='none';document.getElementById('sidebar').style.display='flex';document.getElementById('main-content').style.display='block'},500);document.getElementById('user-badge').innerText='Akun: '+activeRole+' ('+userObj.user+')';document.getElementById('user-badge').style.color=userObj.role==='SPV'?'#fbbf24':userObj.role==='DRIVER'?'#a78bfa':userObj.role==='adminRMW'?'#34d399':'#22d3ee';document.querySelectorAll('.spv-only').forEach(m=>m.style.display=userObj.role==='SPV'?'flex':'none');
     document.querySelectorAll('.nav-item').forEach(m => {
         const menuId = m.dataset.menu;
         if(userObj.menuAccess && !userObj.menuAccess.includes(menuId)) {
@@ -889,7 +934,7 @@ function renderUserTable(){
             const checked = u.menuAccess && u.menuAccess.includes(m.id) ? 'checked' : '';
             return `<div class="access-item"><input type="checkbox" ${checked} onchange="updateUserAccess(${i}, '${m.id}', this.checked)"> ${m.name}</div>`;
         }).join('');
-        let badge = u.role==='SPV'?'badge-spv':u.role==='DRIVER'?'badge-driver':'badge-admin';
+        let badge = u.role==='SPV'?'badge-spv':u.role==='DRIVER'?'badge-driver':u.role==='adminRMW'?'badge-success':'badge-admin';
         return `<div class="user-card">
             <div class="user-card-head">
                 <div>
@@ -906,7 +951,27 @@ function renderUserTable(){
     }).join('');
 }
 function hapusUser(i){if(DB_USERS.length<=1)return alert('Tidak bisa hapus user terakhir!');if(DB_USERS[i].role==='SPV'&&DB_USERS.filter(u=>u.role==='SPV').length<=1)return alert('Harus ada minimal 1 SPV!');if(!confirm('Hapus user '+DB_USERS[i].user+'?'))return;DB_USERS.splice(i,1);saveData();renderUserTable()}
-document.getElementById('form-add-user').addEventListener('submit',function(e){e.preventDefault();const role=document.getElementById('usr-role').value,user=document.getElementById('usr-name').value.trim(),pass=document.getElementById('usr-pass').value;if(!user||!pass)return alert('Isi username dan password!');if(DB_USERS.find(x=>x.user===user))return alert('Username sudah ada!');let defaultAccess=['dashboard'];if(role==='ADMIN')defaultAccess=['dashboard','view1','view2','view-muat','view-spp','view-po','view-driver','view-download'];else if(role==='SPV')defaultAccess=['dashboard','view1','view2','view-muat','view-spp','view-po','view3','view-firebase','view-driver','view-settings','view-master','view-download'];else if(role==='DRIVER')defaultAccess=['view-driver'];DB_USERS.push({role:role,user:user,pass:pass,menuAccess:defaultAccess});saveData();alert('User ditambahkan!');this.reset();renderUserTable()});
+
+document.getElementById('form-add-user').addEventListener('submit',function(e){
+    e.preventDefault();
+    const role=document.getElementById('usr-role').value,
+    user=document.getElementById('usr-name').value.trim(),
+    pass=document.getElementById('usr-pass').value;
+    if(!user||!pass)return alert('Isi username dan password!');
+    if(DB_USERS.find(x=>x.user===user))return alert('Username sudah ada!');
+    
+    let defaultAccess=['dashboard'];
+    if(role==='ADMIN') defaultAccess=['dashboard','view1','view2','view-muat','view-spp','view-po','view-driver','view-download'];
+    else if(role==='adminRMW') defaultAccess=['dashboard','view1','view2','view-muat','view-spp','view-po','view-driver','view-download'];
+    else if(role==='SPV') defaultAccess=['dashboard','view1','view2','view-muat','view-spp','view-po','view3','view-firebase','view-driver','view-settings','view-master','view-download'];
+    else if(role==='DRIVER') defaultAccess=['view-driver'];
+    
+    DB_USERS.push({role:role,user:user,pass:pass,menuAccess:defaultAccess});
+    saveData();
+    alert('User ditambahkan!');
+    this.reset();
+    renderUserTable();
+});
 function updateUserAccess(userIdx, menuId, isChecked) {
     let user = DB_USERS[userIdx];
     if(!user.menuAccess) user.menuAccess = [];
@@ -947,16 +1012,44 @@ function showView(vid, elem){document.querySelectorAll('.view').forEach(v=>v.cla
     document.getElementById('f1-tujuan').innerHTML = '<option value="">-- Pilih Tujuan --</option>';
     document.getElementById('f1-vendor-list').innerHTML = '<p style="color:var(--text-muted);font-size:11px;grid-column:1/-1">Pilih rute awal dan tujuan untuk melihat vendor.</p>';
 };if(vid==='view2')fillSelect('f2-select-order',getBase('BARU'),false);if(vid==='view-muat'){filterMuatSelect();setTimeout(initSignaturePad,200)}if(vid==='view-spp')filterSPPSelect();if(vid==='view-po')filterPOSelect();if(vid==='view3')filterReviseSelect();if(vid==='dashboard'){populateDashboardFilters();renderMainTable();document.getElementById('fb-setup-banner').style.display=(!firebaseDB||syncStatus==='offline')?'flex':'none'}
+
 if(vid==='view-master'){
     renderMasterTable();
     renderArmadaTable();
     renderBarangTable();
     renderBlacklistTable();
     loadTujuanDropdownTarif();
-    loadRuteAwalDropdownTarif(); // <-- TAMBAHKAN INI
+    loadRuteAwalDropdownTarif();
+    renderUserTable();
+    
+    // Sembunyikan tab Akun jika bukan SPV
+    const akunTabBtn = document.getElementById('mt-tab-btn-akun');
+    if(activeRoleKey !== 'SPV'){
+        if(akunTabBtn) akunTabBtn.style.display = 'none'; // Sembunyikan tombol tab
+        // Jika admin/driver sempat masuk ke tab akun, paksa kembali ke tab tarif
+        if(document.getElementById('mt-tab-akun').classList.contains('active')){
+            showMasterTab('tarif', document.getElementById('mt-tab-btn-tarif'));
+        }
+    } else {
+        if(akunTabBtn) akunTabBtn.style.display = 'flex'; // Tampilkan tombol tab untuk SPV
+    }
 }
-
 if(vid==='view-firebase')loadFBConfigUI();if(vid==='view-settings')renderUserTable();if(vid==='view-download'){populateDlFilters();renderDlColConfig();renderDlHistory()}if(vid==='view-driver'){filterDriverOrders();populateDriverDestinations();}}
+
+function showMasterTab(tabId, elem) {
+    document.querySelectorAll('.master-tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.master-tab').forEach(t => t.classList.remove('active'));
+    
+    const content = document.getElementById('mt-tab-' + tabId);
+    if(content) content.classList.add('active');
+    
+    if(elem) {
+        elem.classList.add('active');
+    } else {
+        const tabBtn = document.getElementById('mt-tab-btn-' + tabId);
+        if(tabBtn) tabBtn.classList.add('active');
+    }
+}
 
 function getBase(sf){if(sf==='BARU')return DB_ORDERS.filter(o=>!o.fleetData||!o.fleetData.length);if(sf==='TERALOKASI')return DB_ORDERS.filter(o=>o.fleetData&&o.fleetData.length>0&&o.statusMuat!=='MUAT');if(sf==='MUAT_SELESAI')return DB_ORDERS.filter(o=>o.statusMuat==='MUAT');if(sf==='SPP_SELESAI')return DB_ORDERS.filter(o=>o.statusSPP==='SELESAI');return[...DB_ORDERS]}function searchF(list,text,dv){const t=(text||'').toLowerCase().trim();if(t)list=list.filter(o=>{const sj=o.fleetData?o.fleetData.map(f=>f.noSJ).filter(Boolean).join(' ').toLowerCase():'';const np=o.fleetData?o.fleetData.map(f=>f.nopol).filter(Boolean).join(' ').toLowerCase():'';return o.id.toLowerCase().includes(t)||o.tujuan.toLowerCase().includes(t)||sj.includes(t)||np.includes(t)||(o.noSPP&&o.noSPP.toLowerCase().includes(t))||(o.noPO&&o.noPO.toLowerCase().includes(t))});if(dv)list=list.filter(o=>o.tgl===dv);return list}function fillSelect(sid,orders,keep){const sel=document.getElementById(sid);const cur=keep?sel.value:'';sel.innerHTML='<option value="">-- Pilih --</option>'+orders.map(o=>buildOrderOption(o)).join('');if(cur&&orders.find(o=>o.id===cur))sel.value=cur}
 function filterMuatSelect(){
