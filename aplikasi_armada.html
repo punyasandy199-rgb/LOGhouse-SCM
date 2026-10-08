@@ -446,7 +446,13 @@
         <div class="form-group" style="max-width:500px"><label>Pilih Order</label><select id="fmuat-select-order" onchange="loadMuatDetails()"></select></div>
         <hr>
         <div id="muat-details-container" style="display:none">
-            <div class="muat-info-bar"><div class="muat-info-item"><small>Tujuan</small><strong id="muat-tujuan">-</strong></div><div class="muat-info-item"><small>Vendor</small><strong id="muat-vendor">-</strong></div><div class="muat-info-item"><small>Rit</small><strong id="muat-qty">-</strong></div><div class="muat-info-item"><small>Status Saat Ini</small><strong id="muat-status-badge" style="font-size:10px">-</strong></div></div>
+            <div class="muat-info-bar" style="grid-template-columns: repeat(5, 1fr);">
+    <div class="muat-info-item"><small>Rute Awal</small><strong id="muat-ruteawal">-</strong></div>
+    <div class="muat-info-item"><small>Tujuan</small><strong id="muat-tujuan">-</strong></div>
+    <div class="muat-info-item"><small>Vendor</small><strong id="muat-vendor">-</strong></div>
+    <div class="muat-info-item"><small>Rit</small><strong id="muat-qty">-</strong></div>
+    <div class="muat-info-item"><small>Status Saat Ini</small><strong id="muat-status-badge" style="font-size:10px">-</strong></div>
+</div>
             <form id="formConfirmMuat">
                 <label style="color:#0ea5e9;margin-bottom:10px;display:block"><i class="fa-solid fa-boxes-stacked"></i> Rincian Kargo & No. SJ:</label>
                 <div id="dynamic-muat-inputs"></div>
@@ -1891,6 +1897,7 @@ function loadMuatDetails(){
     const o=DB_ORDERS.find(x=>x.id===oid);
     if(!o){document.getElementById('muat-details-container').style.display='none';return}
     
+    document.getElementById('muat-ruteawal').innerText=o.ruteAwal||'-';
     document.getElementById('muat-tujuan').innerText=o.tujuan;
     document.getElementById('muat-vendor').innerText=o.vendor;
     document.getElementById('muat-qty').innerText=o.qty;
