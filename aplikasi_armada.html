@@ -241,13 +241,21 @@
     }
     .sj-wrap { 
         margin: 0; padding: 0; border: none; box-shadow: none; 
-        max-width: 215mm; width: 215mm; height: 280mm; display: block; overflow: hidden; 
+        max-width: 215mm; width: 215mm; display: block; overflow: hidden; 
     }
     #sj-print-area { 
         margin: 0; padding: 0; display: block; overflow: hidden; 
     }
     
-    /* Kunci presisi 280mm, tapi beri padding bawah 20mm agar tidak termakan printer */
+    /* Atur tinggi container berdasarkan versi SJ */
+    .sj-wrap.has-internal, .sj-wrap.has-internal #sj-print-area {
+        height: 140mm !important;
+    }
+    .sj-wrap:not(.has-internal), .sj-wrap:not(.has-internal) #sj-print-area {
+        height: 280mm !important;
+    }
+    
+    /* Kunci presisi ukuran kertas */
     .a4-page, .manual-a4 {
         width: 215mm; 
         height: 280mm; 
@@ -261,8 +269,23 @@
         page-break-after: avoid !important;
         page-break-inside: avoid !important;
     }
-    .no-print { display: none !important; }
-}
+    /* Ukuran Setengah A4 untuk Internal */
+    .sj-internal {
+        width: 215mm;
+        height: 140mm; 
+        min-height: 140mm;
+        max-height: 140mm;
+        margin: 0 auto;
+        padding: 5mm 10mm;
+        border: none;
+        box-shadow: none;
+        overflow: hidden !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+    }
 
 /* CSS Autocomplete Dropdown */
 .autocomplete-wrapper{position:relative;width:100%}
@@ -273,7 +296,67 @@
 .ac-nopol{color:#34d399;font-weight:700;min-width:80px}
 .ac-driver{color:#e2e8f0;flex:1}
 .ac-hp{color:var(--text-muted);font-size:10px}
+	
+	/* CSS Surat Jalan Internal (Half A4) */
+.internal-half-a4 {
+    width: 215mm;
+    height: 140mm;
+    min-height: 140mm;
+    max-height: 140mm;
+    padding: 8mm 10mm;
+    margin: 0 auto;
+    background: white;
+    color: black;
+    box-sizing: border-box;
+    border: 1px solid black; /* Garis tepi luar */
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.internal-half-a4 * { color: black !important; }
 
+/* Header */
+.int-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid black; padding-bottom: 5px; margin-bottom: 8px; }
+.int-h-left { width: 40%; }
+.int-h-left h1 { font-size: 14px; margin: 0; }
+.int-h-left p { font-size: 10px; margin: 2px 0 0 0; }
+.int-h-center { width: 30%; text-align: center; }
+.int-h-center h3 { font-size: 14px; margin: 0; font-weight: bold; text-transform: uppercase; }
+.int-h-center p { font-size: 10px; margin: 0; }
+.int-h-right { width: 30%; text-align: right; font-size: 10px; }
+.int-h-right p { margin: 0; }
+
+/* Info Dari / Ke */
+.int-info-box { border: 1px solid black; padding: 5px; display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
+.int-info-col { width: 48%; }
+
+/* Tabel Barang */
+.int-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 5px; }
+.int-table th, .int-table td { border: 1px solid black; padding: 5px; text-align: center; }
+.int-table th { background: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+
+/* Footer & Kotak Tanda Tangan */
+.int-footer { margin-top: auto; padding-top: 10px; display: flex; justify-content: space-between; gap: 10px; }
+.int-note { width: 35%; font-size: 10px; border: 1px solid black; padding: 8px; display: flex; flex-direction: column; justify-content: center; }
+.int-note p { margin: 0 0 4px 0; }
+.int-signs { width: 60%; display: flex; justify-content: space-between; gap: 10px; }
+.int-sign-box { width: 32%; border: 1px solid black; padding: 5px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; font-size: 10px; height: 80px; }
+.int-sign-label { font-weight: bold; font-size: 10px; }
+.int-sign-img { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+.int-sign-img img { max-height: 35px; }
+.int-sign-line { border-top: 1px solid black; padding-top: 2px; }
+
+@media print {
+    .internal-half-a4 { 
+        border: 1px solid black !important;
+        height: 140mm !important; 
+        min-height: 140mm !important; 
+        max-height: 140mm !important;
+        overflow: hidden !important;
+        page-break-after: avoid !important;
+    }
+}
         /* CSS untuk Driver dan Upload Foto */
         .driver-step { display: none; animation: slideUp .5s ease; }
         .driver-step.active { display: block; }
@@ -754,7 +837,15 @@
     </div>
 </main>
 
-<div id="modal-sj" class="modal"><div class="modal-content" style="max-width:880px;background:#d1d5db;padding:22px"><div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap" class="no-print"><button class="btn btn-warning btn-sm" onclick="gantiVersiSJ('manual')"><i class="fa-solid fa-pen"></i> Manual</button><button class="btn btn-primary btn-sm" onclick="gantiVersiSJ('eksternal')"><i class="fa-solid fa-building"></i> Non Oracle</button><button class="btn btn-success btn-sm" onclick="cetakSuratJalan()"><i class="fa-solid fa-print"></i> Cetak</button><button class="btn btn-primary btn-sm" onclick="simpanSuratJalanPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button><button class="btn btn-danger btn-sm" onclick="closeModal('modal-sj')"><i class="fa-solid fa-xmark"></i> Tutup</button></div><div class="sj-wrap"><div id="sj-print-area"></div></div></div></div>
+<div id="modal-sj" class="modal"><div class="modal-content" style="max-width:880px;background:#d1d5db;padding:22px"><div style="display:flex;gap:10px;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap" class="no-print">
+    <button class="btn btn-warning btn-sm" onclick="gantiVersiSJ('manual')"><i class="fa-solid fa-pen"></i> Manual</button>
+    <button class="btn btn-info btn-sm" onclick="gantiVersiSJ('internal')"><i class="fa-solid fa-file-lines"></i> Internal</button>
+    <button class="btn btn-primary btn-sm" onclick="gantiVersiSJ('eksternal')"><i class="fa-solid fa-building"></i> Non Oracle</button>
+    <button class="btn btn-success btn-sm" onclick="cetakSuratJalan()"><i class="fa-solid fa-print"></i> Cetak</button>
+    <button class="btn btn-primary btn-sm" onclick="simpanSuratJalanPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+    <button class="btn btn-danger btn-sm" onclick="closeModal('modal-sj')"><i class="fa-solid fa-xmark"></i> Tutup</button>
+</div>
+<div class="sj-wrap"><div id="sj-print-area"></div></div></div></div>
 <div id="modal-blacklist-confirm" class="modal" style="background:rgba(7,10,18,.93)"><div class="modal-content" style="max-width:600px;border-color:#ef4444;border-width:2px"><div class="modal-header"><h3 style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> Peringatan Blacklist!</h3><span class="modal-close" onclick="closeModal('modal-blacklist-confirm')">&times;</span></div><div style="margin-bottom:18px"><p style="font-size:12px;margin-bottom:12px">Terdeteksi <strong style="color:#f87171">BLACKLIST</strong>:</p><div id="blacklist-violations-list"></div><div class="form-group"><label style="color:#f8fafc;font-weight:600">Alasan Dispensasi:</label><textarea id="blacklist-bypass-reason" rows="3" required></textarea></div></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-sm" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted)" onclick="closeModal('modal-blacklist-confirm')">Batal</button><button class="btn btn-warning btn-sm" onclick="executeBypassSubmission()"><i class="fa-solid fa-shield-halved"></i> Izinkan</button></div></div></div>
 <div id="modal-delete-confirm" class="modal" style="background:rgba(7,10,18,.93)"><div class="modal-content" style="max-width:480px;border-color:#ef4444;border-width:2px"><div class="modal-header"><h3 style="color:#ef4444"><i class="fa-solid fa-trash-can"></i> Hapus Order?</h3><span class="modal-close" onclick="closeModal('modal-delete-confirm')">&times;</span></div><div style="margin-bottom:18px"><p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Hapus <strong id="delete-order-id" style="color:#f87171"></strong> permanen?</p><div class="form-group"><label>Password Akun</label><input type="password" id="delete-confirm-pass" required></div></div><div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-sm" style="background:transparent;border:1px solid var(--text-muted);color:var(--text-muted)" onclick="closeModal('modal-delete-confirm')">Batal</button><button class="btn btn-danger btn-sm" onclick="executeDeleteOrder()"><i class="fa-solid fa-trash-can"></i> Hapus</button></div></div></div>
 
@@ -2124,6 +2215,8 @@ function gantiVersiSJ(versi){
     if(!currentPrintedOrder)return;
     if(versi==='manual'){
         printArea.innerHTML=buildTemplateManual(currentPrintedOrder,currentRitIdx);
+    } else if(versi==='internal'){
+        printArea.innerHTML=buildTemplateInternal(currentPrintedOrder,currentRitIdx);
     } else {
         printArea.innerHTML=buildTemplateEksternal(currentPrintedOrder,currentRitIdx);
     }
@@ -2266,6 +2359,198 @@ function buildTemplateManual(o,ri){
         </div>
     </div>`;
 }
+
+/* ====== TEMPLATE INTERNAL (HALF A4 PORTRAIT) ====== */
+function buildTemplateInternal(o,ri){
+    const f=o.fleetData[ri];
+    
+    let rows = '';
+    let tq = 0;
+    let tk = 0;
+
+    f.items.forEach((it,i) => {
+        tq += it.qtyBox;
+        let berat = it.beratPerUnit || 30;
+        let tonase = it.qtyBox * berat; 
+        tk += tonase;
+        
+        rows += `<tr>
+            <td style="text-align:center">${it.barang || '-'}</td>
+            <td style="text-align:center">
+                ${it.kodeBarang||'-'}<br>(1 X ${berat} KG)
+            </td>
+            <td style="text-align:center">${it.qtyBox}</td>
+            <td style="text-align:center">${tonase.toLocaleString('id-ID')}</td>
+        </tr>`;
+    });
+
+    // Tambahkan 1 baris kosong
+    rows += `<tr style="height: 15px;"><td></td><td></td><td></td><td></td></tr>`;
+
+    let spvSignHtml = f.spvSign ? `<img src="${f.spvSign}" style="max-height: 30px;">` : '';
+    let driverSignHtml = (f.driverWorkflow && f.driverWorkflow.signGo) ? `<img src="${f.driverWorkflow.signGo}" style="max-height: 30px;">` : '';
+    
+    return `
+    <div class="sj-internal" style="width: 215mm; height: 140mm; min-height: 140mm; max-height: 140mm; margin: 0 auto; background: #ffffff !important; padding: 5mm 10mm; box-sizing: border-box; overflow: hidden;">
+        <style>
+            .sj-internal { font-family: 'Times New Roman', Times, serif !important; }
+            .sj-internal, .sj-internal * { color: #000000 !important; background-color: #ffffff !important; border-color: #000000 !important; border-radius: 0 !important; box-shadow: none !important; }
+            .sj-internal img { background: transparent !important; }
+            
+            /* Memaksa seluruh tabel memiliki 4 kolom yang sama lebar (25%) agar garisnya lurus dari atas ke bawah */
+            .sj-internal table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 4px; background: #fff !important; table-layout: fixed; }
+            .sj-internal th, .sj-internal td { border: 1px solid #000 !important; padding: 3px 5px; vertical-align: middle; background: #fff !important; }
+            
+            .sj-internal .header-title-company { font-size: 12px; font-weight: bold; text-align: center; }
+            .sj-internal .header-form { font-size: 16px; text-align: center; font-weight: bold; }
+            .sj-internal .header-doc-title { font-size: 13px; font-weight: bold; text-align: center; letter-spacing: 0.5px; }
+            
+            .sj-internal .route-text { font-size: 12px; text-align: left; font-weight: bold; word-wrap: break-word; padding-left: 10px; }
+            
+            /* Tabel TTD: Kotak Atas (Judul) dan Kotak Bawah (TTD+Nama) menyatu */
+            .sj-internal .sig-table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
+            .sj-internal .sig-table th { border: 1px solid #000 !important; padding: 4px; font-weight: bold; text-align: center; width: 25%; background: #fff !important; }
+            .sj-internal .sig-table td { border: 1px solid #000 !important; padding: 4px; vertical-align: bottom; width: 25%; }
+            .sj-internal .sig-box { height: 35px; display: flex; align-items: flex-end; justify-content: center; }
+            .sj-internal .sig-box img { max-height: 30px; }
+            .sj-internal .sig-name-line { margin-top: 10px; padding-top: 2px; font-size: 10px; text-align: left; }
+            
+            .sj-internal .dist-section { width: 100%; font-size: 9px; margin-top: 8px; padding: 0 2px; }
+            .sj-internal .dist-title { font-weight: bold; margin-bottom: 3px; }
+            .sj-internal .dist-line { display: flex; justify-content: space-between; white-space: nowrap; }
+            
+            @media print {
+                html, body { margin: 0 !important; padding: 0 !important; width: 100%; height: auto; }
+                @page { size: 215mm 140mm; margin: 0; }
+                .sj-internal { border: none; width: 215mm; height: 140mm; min-height: 140mm; max-height: 140mm; padding: 5mm 10mm; position: absolute; top: 0; left: 0; }
+            }
+        </style>
+
+        <!-- 1. HEADER DOKUMEN (4 Kolom 25%) -->
+        <table>
+            <tr>
+                <td rowspan="2" style="width: 25%; text-align: center;">
+                    <div class="header-title-company">PT Santos Jaya Abadi</div>
+                    <div>Sukodono - Sidoarjo</div>
+                </td>
+                <td rowspan="2" style="width: 25%;">
+                    <div class="header-form">FORM</div>
+                </td>
+                <td style="width: 25%;">No. Dokumen</td>
+                <td style="width: 25%;">: F/SCM/01.08</td>
+            </tr>
+            <tr>
+                <td>Rev. No</td>
+                <td>: 05</td>
+            </tr>
+            <tr>
+                <td colspan="2" rowspan="2" class="header-doc-title">
+                    Surat Jalan / Delivery Note
+                </td>
+                <td>Halaman</td>
+                <td>: 1/1</td>
+            </tr>
+            <tr>
+                <td>Berlaku Tanggal</td>
+                <td>: 10/10/2026</td>
+            </tr>
+        </table>
+
+        <!-- 2. INFORMASI PENGIRIMAN & RUTE (Disesuaikan agar garisnya sejajar) -->
+        <table>
+            <tr>
+                <td style="width: 25%;">Tanggal</td>
+                <td style="width: 25%;">: ${formatTanggal(o.tgl)}</td>
+                <td colspan="2" rowspan="2" style="width: 50%;" class="route-text">
+                    Dari : ${o.ruteAwal || 'Gudang'}
+                </td>
+            </tr>
+            <tr>
+                <td>No Polisi</td>
+                <td>: ${f.nopol || '-'}</td>
+            </tr>
+            <tr>
+                <td>No PO</td>
+                <td>: ${o.noPO || '-'}</td>
+                <td colspan="2" rowspan="2" class="route-text">
+                    Tujuan : ${o.tujuan}
+                </td>
+            </tr>
+            <tr>
+                <td>No Surat Jalan</td>
+                <td>: ${f.noSJ || '-'}</td>
+            </tr>
+        </table>
+
+        <!-- 3. TABEL BARANG (4 Kolom 25%) -->
+        <table>
+            <thead>
+                <tr class="text-center text-bold">
+                    <th style="width: 25%; text-align: center;">Nama Barang</th>
+                    <th style="width: 25%; text-align: center;">Detail Barang</th>
+                    <th style="width: 25%; text-align: center;">Jumlah<br>(Karung/Pail/Zak/pcs/Box)</th>
+                    <th style="width: 25%; text-align: center;">Jumlah<br>(Kg/Liter/Meter)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rows}
+                <tr class="text-bold">
+                    <td colspan="2" class="text-center">Grand Total</td>
+                    <td class="text-center">${tq}</td>
+                    <td class="text-center">${tk.toLocaleString('id-ID')}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 4. NOTE (KOTAK UTUH TANPA GARIS TENGAH) -->
+        <table style="margin-bottom: 8px;">
+            <tr>
+                <td colspan="4" style="height: 25px; font-weight: bold; vertical-align: top; padding-top: 2px; padding-left: 5px;">Note :</td>
+            </tr>
+        </table>
+
+        <!-- 5. TANDA TANGAN (Kotak Utuh dari Atas ke Bawah) -->
+        <table class="sig-table">
+            <tr>
+                <th>Penerima</th>
+                <th>Transporter</th>
+                <th>Warehouse Admin</th>
+                <th>Warehouse Spv.</th>
+            </tr>
+            <tr>
+                <td>
+                    <div class="sig-box">${driverSignHtml}</div>
+                    <div class="sig-name-line">Nama : ....................</div>
+                </td>
+                <td>
+                    <div class="sig-box"></div>
+                    <div class="sig-name-line">Nama : ....................</div>
+                </td>
+                <td>
+                    <div class="sig-box"></div>
+                    <div class="sig-name-line">Nama : ....................</div>
+                </td>
+                <td>
+                    <div class="sig-box">${spvSignHtml}</div>
+                    <div class="sig-name-line">Nama : ....................</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- DISTRIBUSI (2 BARIS: JUDUL & 1 BARIS ITEM) -->
+        <div class="dist-section">
+            <div class="dist-title">Distribusi :</div>
+            <div class="dist-line">
+                <span>Putih : DAFT PT.SJA</span>
+                <span>Merah : Customer</span>
+                <span>Kuning : Security PT. SJA</span>
+                <span>Hijau : Warehouse PT. SJA</span>
+                <span>Biru : Transporter / Other</span>
+            </div>
+        </div>
+    </div>`;
+}
+
 /* ====== TEMPLATE EKSTERNAL (A4 RESMI) ====== */
 function buildTemplateEksternal(o,ri){
     const f=o.fleetData[ri];
@@ -2375,43 +2660,114 @@ function buildTemplateEksternal(o,ri){
         </div>
     </div>`;
 }
-function cetakSuratJalan(){window.print()}
+function cetakSuratJalan(){
+    // Sembunyikan tombol secara paksa saat cetak
+    const noPrintEls = document.querySelectorAll('#modal-sj .no-print');
+    const originalDisplays = [];
+    noPrintEls.forEach(el => {
+        originalDisplays.push(el.style.display);
+        el.style.display = 'none';
+    });
+
+    if(currentSjVersion === 'internal'){
+        const style = document.createElement('style');
+        style.id = 'internal-print-css';
+        style.innerHTML = `
+            @media print {
+                @page { size: 215mm 140mm portrait !important; margin: 0 !important; }
+                html, body { width: 215mm !important; height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+                #modal-sj { position: absolute !important; top: 0 !important; left: 0 !important; width: 215mm !important; height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+                .modal-content { max-width: 100% !important; width: 100% !important; height: 140mm !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; }
+                .sj-wrap { width: 100% !important; height: 140mm !important; max-height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; box-shadow: none !important; }
+                #sj-print-area { width: 100% !important; height: 140mm !important; max-height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+                .sj-internal { position: absolute !important; top: 0 !important; left: 0 !important; width: 215mm !important; height: 140mm !important; max-height: 140mm !important; margin: 0 !important; padding: 5mm 10mm !important; overflow: hidden !important; border: none !important; box-shadow: none !important; }
+                .no-print { display: none !important; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                document.getElementById('internal-print-css')?.remove();
+                // Kembalikan tombol setelah cetak
+                noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
+            }, 500);
+        }, 200);
+    } else {
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                // Kembalikan tombol setelah cetak
+                noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
+            }, 500);
+        }, 200);
+    }
+}
 
 function simpanSuratJalanPDF(){
     const area = document.getElementById('sj-print-area');
-    const a4Div = area.querySelector('.a4-page, .manual-a4');
+    const sjDiv = area.querySelector('.a4-page, .manual-a4, .sj-internal');
     
-    // 1. Simpan style asli
-    const origStyle = a4Div ? a4Div.style.cssText : '';
-    
-    // 2. Paksa ukuran 215mm x 280mm dengan padding bawah 20mm
-    if(a4Div) {
-        a4Div.style.width = '215mm';
-        a4Div.style.height = '280mm';
-        a4Div.style.maxHeight = '280mm';
-        a4Div.style.minHeight = '280mm';
-        a4Div.style.margin = '0';
-        a4Div.style.border = 'none';
-        a4Div.style.padding = '5mm 10mm 20mm 10mm';
-        a4Div.style.overflow = 'hidden';
+    // Sembunyikan tombol secara paksa saat generate PDF
+    const noPrintEls = document.querySelectorAll('#modal-sj .no-print');
+    const originalDisplays = [];
+    noPrintEls.forEach(el => {
+        originalDisplays.push(el.style.display);
+        el.style.display = 'none';
+    });
+
+    const origStyle = sjDiv ? sjDiv.style.cssText : '';
+    let pdfFormat = [215, 280]; 
+    let orientation = 'portrait';
+
+    if(sjDiv) {
+        if(currentSjVersion === 'internal'){
+            pdfFormat = [215, 140]; // Setengah A4
+            orientation = 'portrait';
+            sjDiv.style.width = '215mm';
+            sjDiv.style.height = '140mm';
+            sjDiv.style.maxHeight = '140mm';
+            sjDiv.style.minHeight = '140mm';
+            sjDiv.style.padding = '5mm 10mm';
+            sjDiv.style.margin = '0';
+            sjDiv.style.border = 'none';
+            sjDiv.style.overflow = 'hidden';
+            sjDiv.style.position = 'relative';
+            sjDiv.style.top = '0';
+            sjDiv.style.left = '0';
+            sjDiv.style.boxSizing = 'border-box';
+        } else {
+            sjDiv.style.width = '215mm';
+            sjDiv.style.height = '280mm';
+            sjDiv.style.maxHeight = '280mm';
+            sjDiv.style.minHeight = '280mm';
+            sjDiv.style.padding = '5mm 10mm 20mm 10mm';
+            sjDiv.style.position = 'relative';
+            sjDiv.style.boxSizing = 'border-box';
+            pdfFormat = [215, 280];
+            orientation = 'portrait';
+        }
     }
 
-    // 3. Proses PDF
     html2pdf().set({
         margin: 0,
         filename:'SJ_'+(currentPrintedOrder.fleetData[currentRitIdx]?.noSJ||'Draft')+'.pdf',
         image:{type:'jpeg',quality:0.98},
-        html2canvas:{scale:2, useCORS: true, backgroundColor: '#ffffff'},
-        jsPDF:{unit:'mm', format:[215, 280], orientation:'portrait'},
+        html2canvas:{scale:2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 815},
+        jsPDF:{unit:'mm', format:pdfFormat, orientation:orientation},
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    }).from(area).save().then(() => {
-        // 4. Kembalikan style asli
-        if(a4Div) a4Div.style.cssText = origStyle;
+    }).from(sjDiv).save().then(() => {
+        if(sjDiv) sjDiv.style.cssText = origStyle;
+        // Kembalikan tombol setelah PDF selesai dibuat
+        noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
     }).catch(err => {
-        if(a4Div) a4Div.style.cssText = origStyle;
+        if(sjDiv) sjDiv.style.cssText = origStyle;
+        noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
         console.error('PDF Error:', err);
     });
 }
+
 function closeModal(id){document.getElementById(id).style.display='none'}
 document.getElementById('formSPP').addEventListener('submit',function(e){
     e.preventDefault();
