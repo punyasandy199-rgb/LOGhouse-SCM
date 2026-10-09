@@ -2361,6 +2361,7 @@ function buildTemplateManual(o,ri){
 }
 
 /* ====== TEMPLATE INTERNAL (HALF A4 PORTRAIT) ====== */
+/* ====== TEMPLATE INTERNAL (HALF A4 PORTRAIT) ====== */
 function buildTemplateInternal(o,ri){
     const f=o.fleetData[ri];
     
@@ -2397,7 +2398,6 @@ function buildTemplateInternal(o,ri){
             .sj-internal, .sj-internal * { color: #000000 !important; background-color: #ffffff !important; border-color: #000000 !important; border-radius: 0 !important; box-shadow: none !important; }
             .sj-internal img { background: transparent !important; }
             
-            /* Memaksa seluruh tabel memiliki 4 kolom yang sama lebar (25%) agar garisnya lurus dari atas ke bawah */
             .sj-internal table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 4px; background: #fff !important; table-layout: fixed; }
             .sj-internal th, .sj-internal td { border: 1px solid #000 !important; padding: 3px 5px; vertical-align: middle; background: #fff !important; }
             
@@ -2409,7 +2409,8 @@ function buildTemplateInternal(o,ri){
             
             /* Tabel TTD: Kotak Atas (Judul) dan Kotak Bawah (TTD+Nama) menyatu */
             .sj-internal .sig-table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
-            .sj-internal .sig-table th { border: 1px solid #000 !important; padding: 4px; font-weight: bold; text-align: center; width: 25%; background: #fff !important; }
+            /* font-weight diubah menjadi normal agar tidak bold */
+            .sj-internal .sig-table th { border: 1px solid #000 !important; padding: 4px; font-weight: normal !important; text-align: center; width: 25%; background: #fff !important; }
             .sj-internal .sig-table td { border: 1px solid #000 !important; padding: 4px; vertical-align: bottom; width: 25%; }
             .sj-internal .sig-box { height: 35px; display: flex; align-items: flex-end; justify-content: center; }
             .sj-internal .sig-box img { max-height: 30px; }
@@ -2420,9 +2421,16 @@ function buildTemplateInternal(o,ri){
             .sj-internal .dist-line { display: flex; justify-content: space-between; white-space: nowrap; }
             
             @media print {
-                html, body { margin: 0 !important; padding: 0 !important; width: 100%; height: auto; }
-                @page { size: 215mm 140mm; margin: 0; }
-                .sj-internal { border: none; width: 215mm; height: 140mm; min-height: 140mm; max-height: 140mm; padding: 5mm 10mm; position: absolute; top: 0; left: 0; }
+                @page { size: 215mm 149mm portrait !important; margin: 0 !important; }
+                html, body { width: 100% !important; height: 149mm !important; max-height: 149mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; background: #fff !important; }
+                body * { visibility: hidden !important; }
+                #modal-sj, #modal-sj * { visibility: visible !important; }
+                #modal-sj { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 149mm !important; max-height: 149mm !important; margin: 0 !important; padding: 0 !important; display: block !important; background: #fff !important; box-shadow: none !important; border: none !important; overflow: hidden !important; }
+                .modal-content, .sj-wrap, #sj-print-area { position: relative !important; width: 100% !important; height: 149mm !important; max-height: 149mm !important; margin: 0 !important; padding: 0 !important; border: none !important; background: #fff !important; box-shadow: none !important; overflow: hidden !important; }
+                .sj-internal { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 149mm !important; max-height: 149mm !important; margin: 0 !important; padding: 5mm 5mm !important; border: none !important; box-shadow: none !important; background: #fff !important; overflow: hidden !important; box-sizing: border-box !important; }
+                .sj-internal table { width: 100% !important; }
+                .sj-internal * { box-shadow: none !important; border-radius: 0 !important; }
+                .no-print { display: none !important; }
             }
         </style>
 
@@ -2456,7 +2464,7 @@ function buildTemplateInternal(o,ri){
             </tr>
         </table>
 
-        <!-- 2. INFORMASI PENGIRIMAN & RUTE (Disesuaikan agar garisnya sejajar) -->
+        <!-- 2. INFORMASI PENGIRIMAN & RUTE -->
         <table>
             <tr>
                 <td style="width: 25%;">Tanggal</td>
@@ -2482,14 +2490,14 @@ function buildTemplateInternal(o,ri){
             </tr>
         </table>
 
-        <!-- 3. TABEL BARANG (4 Kolom 25%) -->
+        <!-- 3. TABEL BARANG (Huruf depan kapital, tidak bold) -->
         <table>
             <thead>
-                <tr class="text-center text-bold">
-                    <th style="width: 25%; text-align: center;">Nama Barang</th>
-                    <th style="width: 25%; text-align: center;">Detail Barang</th>
-                    <th style="width: 25%; text-align: center;">Jumlah<br>(Karung/Pail/Zak/pcs/Box)</th>
-                    <th style="width: 25%; text-align: center;">Jumlah<br>(Kg/Liter/Meter)</th>
+                <tr>
+                    <th style="width: 25%; text-align: center; font-weight: normal;">Nama Barang</th>
+                    <th style="width: 25%; text-align: center; font-weight: normal;">Detail Barang</th>
+                    <th style="width: 25%; text-align: center; font-weight: normal;">Jumlah<br>(Karung/Pail/Zak/pcs/Box)</th>
+                    <th style="width: 25%; text-align: center; font-weight: normal;">Jumlah<br>(Kg/Liter/Meter)</th>
                 </tr>
             </thead>
             <tbody>
@@ -2502,14 +2510,14 @@ function buildTemplateInternal(o,ri){
             </tbody>
         </table>
 
-        <!-- 4. NOTE (KOTAK UTUH TANPA GARIS TENGAH) -->
+        <!-- 4. NOTE -->
         <table style="margin-bottom: 8px;">
             <tr>
                 <td colspan="4" style="height: 25px; font-weight: bold; vertical-align: top; padding-top: 2px; padding-left: 5px;">Note :</td>
             </tr>
         </table>
 
-        <!-- 5. TANDA TANGAN (Kotak Utuh dari Atas ke Bawah) -->
+        <!-- 5. TANDA TANGAN (Huruf depan kapital, tidak bold) -->
         <table class="sig-table">
             <tr>
                 <th>Penerima</th>
@@ -2537,7 +2545,7 @@ function buildTemplateInternal(o,ri){
             </tr>
         </table>
 
-        <!-- DISTRIBUSI (2 BARIS: JUDUL & 1 BARIS ITEM) -->
+        <!-- DISTRIBUSI -->
         <div class="dist-section">
             <div class="dist-title">Distribusi :</div>
             <div class="dist-line">
@@ -2674,13 +2682,41 @@ function cetakSuratJalan(){
         style.id = 'internal-print-css';
         style.innerHTML = `
             @media print {
-                @page { size: 215mm 140mm portrait !important; margin: 0 !important; }
-                html, body { width: 215mm !important; height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
-                #modal-sj { position: absolute !important; top: 0 !important; left: 0 !important; width: 215mm !important; height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
-                .modal-content { max-width: 100% !important; width: 100% !important; height: 140mm !important; margin: 0 !important; padding: 0 !important; border: none !important; overflow: hidden !important; }
-                .sj-wrap { width: 100% !important; height: 140mm !important; max-height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; box-shadow: none !important; }
-                #sj-print-area { width: 100% !important; height: 140mm !important; max-height: 140mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
-                .sj-internal { position: absolute !important; top: 0 !important; left: 0 !important; width: 215mm !important; height: 140mm !important; max-height: 140mm !important; margin: 0 !important; padding: 5mm 10mm !important; overflow: hidden !important; border: none !important; box-shadow: none !important; }
+                @page { size: 215mm 149mm portrait !important; margin: 0 !important; }
+                html, body { 
+                    width: 100% !important; 
+                    height: 149mm !important; 
+                    max-height: 149mm !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important; 
+                    overflow: hidden !important; 
+                    background: #fff !important; 
+                }
+                body * { visibility: hidden !important; }
+                #modal-sj, #modal-sj * { visibility: visible !important; }
+                
+                #modal-sj { 
+                    position: absolute !important; top: 0 !important; left: 0 !important; 
+                    width: 100% !important; height: 149mm !important; max-height: 149mm !important; 
+                    margin: 0 !important; padding: 0 !important; display: block !important; 
+                    background: #fff !important; 
+                    box-shadow: none !important; border: none !important; border-radius: 0 !important; 
+                    overflow: hidden !important;
+                }
+                .modal-content, .sj-wrap, #sj-print-area { 
+                    position: relative !important; width: 100% !important; height: 149mm !important; max-height: 149mm !important; 
+                    margin: 0 !important; padding: 0 !important; 
+                    border: none !important; border-radius: 0 !important; background: #fff !important; 
+                    box-shadow: none !important; overflow: hidden !important; 
+                }
+                .sj-internal { 
+                    position: relative !important; width: 100% !important; height: 149mm !important; 
+                    max-height: 149mm !important; margin: 0 !important; padding: 5mm 2mm !important; 
+                    border: none !important; box-shadow: none !important; background: #fff !important; 
+                    overflow: hidden !important; box-sizing: border-box !important; 
+                }
+                .sj-internal table { width: 100% !important; }
+                .sj-internal * { box-shadow: none !important; border-radius: 0 !important; }
                 .no-print { display: none !important; }
             }
         `;
@@ -2690,7 +2726,6 @@ function cetakSuratJalan(){
             window.print();
             setTimeout(() => {
                 document.getElementById('internal-print-css')?.remove();
-                // Kembalikan tombol setelah cetak
                 noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
             }, 500);
         }, 200);
@@ -2698,7 +2733,6 @@ function cetakSuratJalan(){
         setTimeout(() => {
             window.print();
             setTimeout(() => {
-                // Kembalikan tombol setelah cetak
                 noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
             }, 500);
         }, 200);
@@ -2723,13 +2757,13 @@ function simpanSuratJalanPDF(){
 
     if(sjDiv) {
         if(currentSjVersion === 'internal'){
-            pdfFormat = [215, 140]; // Setengah A4
+            pdfFormat = [215, 149]; // Setengah A4 (149mm tinggi agar tidak pecah halaman)
             orientation = 'portrait';
             sjDiv.style.width = '215mm';
-            sjDiv.style.height = '140mm';
-            sjDiv.style.maxHeight = '140mm';
-            sjDiv.style.minHeight = '140mm';
-            sjDiv.style.padding = '5mm 10mm';
+            sjDiv.style.height = '149mm';
+            sjDiv.style.maxHeight = '149mm';
+            sjDiv.style.minHeight = '149mm';
+            sjDiv.style.padding = '5mm 5mm'; // Padding kanan-kiri diperbesar jadi 5mm agar tidak terpotong
             sjDiv.style.margin = '0';
             sjDiv.style.border = 'none';
             sjDiv.style.overflow = 'hidden';
@@ -2737,6 +2771,7 @@ function simpanSuratJalanPDF(){
             sjDiv.style.top = '0';
             sjDiv.style.left = '0';
             sjDiv.style.boxSizing = 'border-box';
+            sjDiv.style.boxShadow = 'none';
         } else {
             sjDiv.style.width = '215mm';
             sjDiv.style.height = '280mm';
@@ -2759,7 +2794,6 @@ function simpanSuratJalanPDF(){
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     }).from(sjDiv).save().then(() => {
         if(sjDiv) sjDiv.style.cssText = origStyle;
-        // Kembalikan tombol setelah PDF selesai dibuat
         noPrintEls.forEach((el, i) => el.style.display = originalDisplays[i]);
     }).catch(err => {
         if(sjDiv) sjDiv.style.cssText = origStyle;
@@ -2767,6 +2801,7 @@ function simpanSuratJalanPDF(){
         console.error('PDF Error:', err);
     });
 }
+
 
 function closeModal(id){document.getElementById(id).style.display='none'}
 document.getElementById('formSPP').addEventListener('submit',function(e){
