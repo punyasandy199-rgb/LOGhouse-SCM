@@ -230,7 +230,7 @@
         <h2>SUPPLY CHAIN MANAGEMENT</h2>
         <p style="color:var(--text-muted);font-size:12px;margin-bottom:30px;text-transform:uppercase;letter-spacing:1px">Logistic Transportation Hub.</p>
         <div class="form-group" style="text-align:left"><label>Username</label><input type="text" id="login-username" placeholder="Username" autocomplete="off" required></div>
-        <div class="form-group" style="text-align:left"><label>Password</label><input type="password" id="login-pass" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')prosesLogin()"></div>
+        <div class="form-group" style="text-align:left"><label>Password</label><input type="password" id="login-pass" placeholder="Masukkan password" autocomplete="new-password" onkeydown="if(event.key==='Enter')prosesLogin()"></div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="prosesLogin()">Masuk <i class="fa fa-arrow-right"></i></button>
         <p style="margin-top:20px;font-size:10px;color:rgba(148,163,184,.35)">Default: admin/123, spv/123, driver/123</p>
     </div>
@@ -757,7 +757,65 @@ function cancelAddNewRuteAwal(){ document.getElementById('add-ruteawal-select-wr
 function loadTujuanDropdownMaster(){ const sel = document.getElementById('mt-tujuan'); if(!sel) return; const tujuans = [...new Set(MASTER_DATA.map(m => m.tujuan))]; sel.innerHTML = '<option value="">-- Pilih --</option><option value="NEW">+ Tambah Baru</option>' + tujuans.map(t => `<option value="${t}">${t}</option>`).join(''); }
 function handleAddTujuanChange(){ if(document.getElementById('mt-tujuan').value === 'NEW'){ document.getElementById('add-tujuan-select-wrap').style.display = 'none'; document.getElementById('add-tujuan-input-wrap').style.display = 'block'; } else { document.getElementById('add-tujuan-select-wrap').style.display = 'block'; document.getElementById('add-tujuan-input-wrap').style.display = 'none'; } }
 function cancelAddNewTujuan(){ document.getElementById('add-tujuan-select-wrap').style.display = 'block'; document.getElementById('add-tujuan-input-wrap').style.display = 'none'; document.getElementById('mt-tujuan').value = ''; }
-function renderMasterTable(){ const tb = document.querySelector('#tableMasterTarif tbody'); if(!tb) return; tb.innerHTML = MASTER_DATA.map((m,i) => `<tr><td><b>${m.ruteAwal || '-'}</b></td><td><b>${m.tujuan}</b></td><td style="font-size:10px">${m.alamat || '-'}</td><td style="color:#22d3ee;font-weight:600">${m.vendor}</td><td>Rp ${m.harga.toLocaleString('id-ID')}</td><td>${m.ppn}%</td><td><button class="btn btn-danger btn-xs" onclick="if(confirm('Hapus?')){MASTER_DATA.splice(${i},1);saveData();renderMasterTable();loadRuteAwalDropdownMaster();loadTujuanDropdownMaster();}"><i class="fa fa-trash"></i></button></td></tr>`).join(''); }
+
+function renderMasterTable(){
+    document.querySelector('#tableMasterTarif tbody').innerHTML = MASTER_DATA.map((m,i) => 
+        '<tr>'+
+        '<td><b>'+(m.ruteAwal||'-')+'</b></td>'+
+        '<td><b>'+m.tujuan+'</b></td>'+
+        '<td style="font-size:10px">'+getAlamatTujuan(m.tujuan)+'</td>'+
+        '<td style="color:#22d3ee;font-weight:600">'+m.vendor+'</td>'+
+        '<td>Rp '+m.harga.toLocaleString('id-ID')+'</td>'+
+        '<td>'+m.ppn+'%</td>'+
+        '<td>'+
+            '<button class="btn btn-primary btn-xs" onclick="bukaEditTarif('+i+')" style="margin-right:5px;"><i class="fa fa-edit"></i></button>'+
+            '<button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){MASTER_DATA.splice('+i+',1);saveData();renderMasterTable()}"><i class="fa fa-trash"></i></button>'+
+        '</td>'+
+        '</tr>'
+    ).join('');
+}
+
+function bukaEditTarif(i){
+    const m = MASTER_DATA[i];
+    document.getElementById('edit-tarif-idx').value = i;
+    document.getElementById('et-tujuan-old').value = m.tujuan;
+    document.getElementById('et-ruteawal').value = m.ruteAwal || '';
+    document.getElementById('et-tujuan').value = m.tujuan;
+    document.getElementById('et-alamat').value = getAlamatTujuan(m.tujuan);
+    document.getElementById('et-vendor').value = m.vendor;
+    document.getElementById('et-harga').value = m.harga;
+    document.getElementById('et-ppn').value = m.ppn;
+    document.getElementById('modal-edit-tarif').style.display = 'flex';
+}
+
+document.getElementById('form-edit-tarif-exec').addEventListener('submit',function(e){
+    e.preventDefault();
+    const i = parseInt(document.getElementById('edit-tarif-idx').value);
+    const old = document.getElementById('et-tujuan-old').value;
+    const nw = document.getElementById('et-tujuan').value.toUpperCase();
+    const newRuteAwal = document.getElementById('et-ruteawal').value.toUpperCase();
+    
+    if(old !== nw){
+        MASTER_DATA.forEach(m => { if(m.tujuan === old) m.tujuan = nw; });
+        DB_ORDERS.forEach(o => { if(o.tujuan === old) o.tujuan = nw; });
+        const tIdx = DB_TUJUAN.findIndex(t => t.tujuan === old);
+        if(tIdx >= 0){
+            DB_TUJUAN[tIdx].tujuan = nw;
+            DB_TUJUAN[tIdx].alamat = document.getElementById('et-alamat').value;
+        }
+    }
+    MASTER_DATA[i].ruteAwal = newRuteAwal;
+    MASTER_DATA[i].tujuan = nw;
+    MASTER_DATA[i].vendor = document.getElementById('et-vendor').value.toUpperCase();
+    MASTER_DATA[i].harga = parseFloat(document.getElementById('et-harga').value);
+    MASTER_DATA[i].ppn = parseFloat(document.getElementById('et-ppn').value);
+    saveData();
+    closeModal('modal-edit-tarif');
+    alert('Data Tarif & Rute berhasil diperbarui!');
+    renderMasterTable();
+});
+
+
 document.getElementById('form-add-tarif').addEventListener('submit', function(e){ e.preventDefault(); let ruteAwal = document.getElementById('mt-ruteawal').value; if(ruteAwal === 'NEW') { ruteAwal = document.getElementById('mt-new-ruteawal').value.toUpperCase(); if(!ruteAwal) return alert('Nama rute awal wajib!'); } let tujuan = document.getElementById('mt-tujuan').value; if(tujuan === 'NEW') { tujuan = document.getElementById('mt-new-tujuan').value.toUpperCase(); if(!tujuan) return alert('Nama tujuan wajib!'); } const alamat = document.getElementById('mt-alamat').value; const ven = document.getElementById('mt-vendor').value.toUpperCase(); const har = parseFloat(document.getElementById('mt-harga').value); const ppn = parseFloat(document.getElementById('mt-ppn').value); const i = MASTER_DATA.findIndex(m => m.ruteAwal === ruteAwal && m.tujuan === tujuan && m.vendor === ven); if(i >= 0) { MASTER_DATA[i].alamat = alamat; MASTER_DATA[i].harga = har; MASTER_DATA[i].ppn = ppn; } else { MASTER_DATA.push({ruteAwal, tujuan, alamat, vendor: ven, harga: har, ppn: ppn}); } if(!DB_TUJUAN.find(x => x.tujuan === tujuan)) DB_TUJUAN.push({tujuan: tujuan, alamat: alamat}); saveData(); alert('Data rute & tarif berhasil disimpan!'); this.reset(); cancelAddNewTujuan(); cancelAddNewRuteAwal(); renderMasterTable(); loadRuteAwalDropdownMaster(); loadTujuanDropdownMaster(); });
 
 document.getElementById('form-add-armada').addEventListener('submit',function(e){e.preventDefault();const np=document.getElementById('ma-nopol').value.toUpperCase(),dr=document.getElementById('ma-driver').value,hp=document.getElementById('ma-hp').value;const i=DB_ARMADA.findIndex(a=>a.nopol===np);if(i>=0){DB_ARMADA[i].driver=dr;DB_ARMADA[i].hp=hp}else DB_ARMADA.push({driver:dr,nopol:np,hp:hp});saveData();alert('Disimpan!');this.reset();renderArmadaTable()});function renderArmadaTable(){document.querySelector('#tableArmada tbody').innerHTML=DB_ARMADA.map((a,i)=>'<tr><td><b>'+a.driver+'</b></td><td style="color:#34d399;font-weight:600">'+a.nopol+'</td><td>'+a.hp+'</td><td><button class="btn btn-primary btn-xs" onclick="bukaEditArmada('+i+')"><i class="fa fa-edit"></i></button> <button class="btn btn-danger btn-xs" onclick="if(confirm(\'Hapus?\')){DB_ARMADA.splice('+i+',1);saveData();renderArmadaTable()}"><i class="fa fa-trash"></i></button></td></tr>').join('')}function bukaEditArmada(i){const a=DB_ARMADA[i];document.getElementById('edit-armada-idx').value=i;document.getElementById('ea-driver').value=a.driver;document.getElementById('ea-nopol').value=a.nopol;document.getElementById('ea-hp').value=a.hp;document.getElementById('modal-edit-armada').style.display='flex'}
@@ -806,6 +864,15 @@ function renderDlHistory(){const tb=document.querySelector('#tableDlHistory tbod
 // === INISIALISASI APLIKASI ===
 saveLocal();
 initFirebase();
+
+// Paksa clear input saat halaman dimuat
+window.addEventListener('load', function() {
+    const uInput = document.getElementById('login-username');
+    const pInput = document.getElementById('login-pass');
+    if(uInput) uInput.value = '';
+    if(pInput) pInput.value = '';
+});
+
 </script>
 </body>
 </html>
